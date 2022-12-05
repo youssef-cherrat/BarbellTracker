@@ -69,7 +69,7 @@ def movement():
         character.y += yspeed
     if uvage.is_pressing("d"):
         character.x += xspeed
-        camera.move((screen_width/2) + 20, screen_height/2)
+        
 
 
 def livesisplay():
