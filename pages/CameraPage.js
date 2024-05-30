@@ -1,10 +1,10 @@
 import { CameraView, useCameraPermissions, useCamera } from 'expo-camera';
 import { useState, useRef } from 'react';
-import { Button, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Button, StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Video } from 'expo-av';
 
-export default function App() {
+export default function CameraPage() {
   const [facing, setFacing] = useState('back');
   const [permission, requestPermission] = useCameraPermissions();
   const [isRecording, setIsRecording] = useState(false);
@@ -33,8 +33,10 @@ export default function App() {
     if (isRecording) {
       setIsRecording(false);
       const video = await cameraRef.current.stopRecording();
-      setVideoUri(video.uri);
-      navigation.navigate('Export', { videoUri: video.uri });
+      if (video && video.uri) {
+        setVideoUri(video.uri);
+        navigation.navigate('Export', { videoUri: video.uri });
+      }
     } else {
       setIsRecording(true);
       await cameraRef.current.recordAsync();
@@ -48,12 +50,16 @@ export default function App() {
         style={styles.camera} 
         facing={facing}
       >
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
-            <Text style={styles.text}>Flip Camera</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.button} onPress={handleRecord}>
-            <Text style={styles.text}>{isRecording ? 'Stop Recording' : 'Start Recording'}</Text>
+        <TouchableOpacity style={styles.flipButton} onPress={toggleCameraFacing}>
+          <Image source={require('../assets/flip_cam.png')} style={styles.flipImage} />
+        </TouchableOpacity>
+        <View style={styles.recordButtonContainer}>
+          <TouchableOpacity style={styles.recordButton} onPress={handleRecord}>
+            {isRecording ? (
+              <View style={styles.recordSquare} />
+            ) : (
+              <View style={styles.recordCircle} />
+            )}
           </TouchableOpacity>
         </View>
       </CameraView>
@@ -63,7 +69,7 @@ export default function App() {
           style={styles.video}
           useNativeControls
           resizeMode="contain"
-          isLooping
+          isLooping={false}
         />
       )}
     </View>
@@ -78,21 +84,40 @@ const styles = StyleSheet.create({
   camera: {
     flex: 1,
   },
-  buttonContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: 'transparent',
-    margin: 64,
-    justifyContent: 'space-around',
+  flipButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
   },
-  button: {
-    alignSelf: 'flex-end',
+  flipImage: {
+    width: 40,
+    height: 40,
+  },
+  recordButtonContainer: {
+    position: 'absolute',
+    bottom: '10%',
+    left: '50%',
+    transform: [{ translateX: -35 }], // Center horizontally
+  },
+  recordButton: {
     alignItems: 'center',
+    justifyContent: 'center',
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    borderWidth: 2,
+    borderColor: 'white',
   },
-  text: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
+  recordCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'red',
+  },
+  recordSquare: {
+    width: 30,
+    height: 30,
+    backgroundColor: 'red',
   },
   video: {
     alignSelf: 'center',
