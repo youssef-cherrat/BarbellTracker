@@ -1,25 +1,18 @@
 import React from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Video } from 'expo-av';
 
-export default function ExportPage({ route, navigation }) {
+export default function ExportPage({ route }) {
   const { videoUri } = route.params;
 
   return (
     <View style={styles.container}>
-      <Text>Export your photos or videos here.</Text>
-      {videoUri && (
-        <Video
-          source={{ uri: videoUri }}
-          style={styles.video}
-          useNativeControls
-          resizeMode="contain"
-          isLooping
-        />
-      )}
-      <Button
-        title="Back to Intro"
-        onPress={() => navigation.navigate('Intro')}
+      <Video
+        source={{ uri: videoUri }}
+        style={styles.video}
+        useNativeControls
+        resizeMode="contain"
+        isLooping={false}
       />
     </View>
   );
@@ -32,8 +25,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   video: {
-    alignSelf: 'center',
-    width: 350,
-    height: 220,
+    width: '100%',
+    height: '100%',
   },
 });
