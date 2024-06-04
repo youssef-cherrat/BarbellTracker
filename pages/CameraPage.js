@@ -1,14 +1,20 @@
-import { CameraView, useCameraPermissions, useCamera } from 'expo-camera';
-import { useState, useRef } from 'react';
+import Camera from 'react-native-vision-camera';
+//import { CameraRoll }
+import * as MediaLibrary from 'expo-media-library';
+import { useState, useRef, useEffect } from 'react';
 import { Button, StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Video } from 'expo-av';
+import { Video, Audio } from 'expo-av';
+import { useCameraDevice } from 'react-native-vision-camera';
 
 export default function CameraPage() {
   const [facing, setFacing] = useState('back');
   const [permission, requestPermission] = useCameraPermissions();
+  //request audio
+  const device = useCameraDevice('back');
+  const [permissionResponse, requestPermissionAudio] = Audio.usePermissions();
   const [isRecording, setIsRecording] = useState(false);
-  const cameraRef = useRef(null);
+  const camera = useRef<Camera>(null);
   const navigation = useNavigation();
   const [videoUri, setVideoUri] = useState(null);
 
@@ -29,32 +35,32 @@ export default function CameraPage() {
     setFacing(current => (current === 'back' ? 'front' : 'back'));
   }
 
-  async function handleRecord() {
-    if (isRecording) {
-      setIsRecording(false);
-      const video = await cameraRef.current.stopRecording();
-      if (video && video.uri) {
-        setVideoUri(video.uri);
-        navigation.navigate('Export', { videoUri: video.uri });
-      }
-    } else {
-      setIsRecording(true);
-      await cameraRef.current.recordAsync();
-    }
-  }
+  const recordVideo = async () => {
+    camera.current.startRecording({
+      onRecordingFinished: (video) => console.log(video),
+      onRecordingError: (error) => console.error(error)
+    })
+  };
+
+  const stopRecording = () => {
+    camera.current.stopRecording();
+  };
 
   return (
     <View style={styles.container}>
-      <CameraView 
-        ref={cameraRef}
+      <Camera 
+        device = {device}
+        isActive={true}
         style={styles.camera} 
-        facing={facing}
+        ref={camera}
+        {...props}
+        video = {true}       
       >
         <TouchableOpacity style={styles.flipButton} onPress={toggleCameraFacing}>
           <Image source={require('../assets/flip_cam.png')} style={styles.flipImage} />
         </TouchableOpacity>
         <View style={styles.recordButtonContainer}>
-          <TouchableOpacity style={styles.recordButton} onPress={handleRecord}>
+          <TouchableOpacity style={styles.recordButton} onPress={isRecording ? stopRecording : recordVideo}>
             {isRecording ? (
               <View style={styles.recordSquare} />
             ) : (
@@ -62,7 +68,7 @@ export default function CameraPage() {
             )}
           </TouchableOpacity>
         </View>
-      </CameraView>
+      </Camera>
       {videoUri && (
         <Video
           source={{ uri: videoUri }}
