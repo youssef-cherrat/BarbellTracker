@@ -68,7 +68,9 @@ export default function EditVideoPage({ route }) {
         <TouchableOpacity onPress={() => console.log('Search button pressed')} style={styles.topButton}>
           <Ionicons name="search-outline" size={32} color="white" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('Export')} style={styles.topButton}>
+        <TouchableOpacity 
+          onPress={() => navigation.navigate('Export', { videoUri, showDate, showWeight, weight, weightUnit, showRPE, rpe })} 
+          style={styles.topButton}>
           <Text style={styles.exportButtonText}>Export</Text>
         </TouchableOpacity>
       </View>
