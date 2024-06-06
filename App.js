@@ -13,8 +13,15 @@ export default function App() {
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Intro">
         <Stack.Screen name="Intro" component={IntroPage} />
-        <Stack.Screen name="Upload" component={UploadPage} />
-        <Stack.Screen name="EditVideo" component={EditVideoPage} />
+        <Stack.Screen 
+          name="Upload" 
+          component={UploadPage} 
+        />
+        <Stack.Screen 
+          name="EditVideo" 
+          component={EditVideoPage} 
+          options={{ headerShown: false }} // Hide the header
+        />
         <Stack.Screen name="Export" component={ExportPage} />
       </Stack.Navigator>
     </NavigationContainer>

@@ -2,10 +2,12 @@ import React, { useRef, useEffect } from 'react';
 import { StyleSheet, View, TouchableOpacity, Text } from 'react-native';
 import { Video } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
 export default function EditVideoPage({ route }) {
   const { videoUri } = route.params || {}; // Ensure route.params is not undefined
   const videoRef = useRef(null);
+  const navigation = useNavigation();
 
   useEffect(() => {
     console.log('Received Video URI:', videoUri);
@@ -39,19 +41,25 @@ export default function EditVideoPage({ route }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.topBar} />
-      {videoUri ? (
-        <Video
-          ref={videoRef}
-          source={{ uri: videoUri }}
-          style={styles.video}
-          resizeMode="contain"
-          isLooping={false}
-          onError={(error) => console.log('Video Error:', error)}
-        />
-      ) : (
-        <Text style={styles.errorText}>Video URI is missing</Text>
-      )}
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={24} color="white" />
+        </TouchableOpacity>
+      </View>
+      <View style={styles.videoContainer}>
+        {videoUri ? (
+          <Video
+            ref={videoRef}
+            source={{ uri: videoUri }}
+            style={styles.video}
+            resizeMode="contain"
+            isLooping={false}
+            onError={(error) => console.log('Video Error:', error)}
+          />
+        ) : (
+          <Text style={styles.errorText}>Video URI is missing</Text>
+        )}
+      </View>
       <View style={styles.bottomBar}>
         <TouchableOpacity onPress={rewindVideo}>
           <Ionicons name="play-back" size={24} color="white" />
@@ -73,17 +81,25 @@ export default function EditVideoPage({ route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  video: {
-    width: '100%',
-    height: '70%', // Adjusted height to ensure visibility
+    backgroundColor: 'black',
   },
   topBar: {
     height: 50,
     width: '100%',
     backgroundColor: 'black',
+    justifyContent: 'center',
+    paddingLeft: 10,
+  },
+  videoContainer: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'black',
+  },
+  video: {
+    width: '100%',
+    height: '100%',
   },
   bottomBar: {
     height: 50,
