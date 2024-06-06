@@ -1,82 +1,99 @@
-import Camera from 'react-native-vision-camera';
-//import { CameraRoll }
-import * as MediaLibrary from 'expo-media-library';
-import { useState, useRef, useEffect } from 'react';
-import { Button, StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { Video, Audio } from 'expo-av';
-import { useCameraDevice } from 'react-native-vision-camera';
+import React, { useState, useRef } from 'react';
+import { Button, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { Video } from 'expo-av';
+import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function CameraPage() {
-  const [facing, setFacing] = useState('back');
-  const [permission, requestPermission] = useCameraPermissions();
-  //request audio
-  const device = useCameraDevice('back');
-  const [permissionResponse, requestPermissionAudio] = Audio.usePermissions();
-  const [isRecording, setIsRecording] = useState(false);
-  const camera = useRef<Camera>(null);
-  const navigation = useNavigation();
   const [videoUri, setVideoUri] = useState(null);
+  const videoRef = useRef(null);
 
-  if (!permission) {
-    return <View />;
-  }
+  const pickVideo = async () => {
+    try {
+      // Request media library permissions
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        alert('Sorry, we need camera roll permissions to make this work!');
+        return;
+      }
 
-  if (!permission.granted) {
-    return (
-      <View style={styles.container}>
-        <Text style={{ textAlign: 'center' }}>We need your permission to show the camera</Text>
-        <Button onPress={requestPermission} title="Grant Permission" />
-      </View>
-    );
-  }
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        allowsEditing: true,
+        quality: 1,
+      });
 
-  function toggleCameraFacing() {
-    setFacing(current => (current === 'back' ? 'front' : 'back'));
-  }
+      console.log(result); // Debugging line
 
-  const recordVideo = async () => {
-    camera.current.startRecording({
-      onRecordingFinished: (video) => console.log(video),
-      onRecordingError: (error) => console.error(error)
-    })
+      if (!result.cancelled) {
+        setVideoUri(result.uri);
+      } else {
+        console.log("User cancelled the picker");
+      }
+    } catch (error) {
+      console.error("Error picking video: ", error);
+    }
   };
 
-  const stopRecording = () => {
-    camera.current.stopRecording();
+  const playVideo = async () => {
+    if (videoRef.current) {
+      await videoRef.current.playAsync();
+    }
+  };
+
+  const pauseVideo = async () => {
+    if (videoRef.current) {
+      await videoRef.current.pauseAsync();
+    }
+  };
+
+  const rewindVideo = async () => {
+    if (videoRef.current) {
+      const status = await videoRef.current.getStatusAsync();
+      await videoRef.current.setPositionAsync(Math.max(status.positionMillis - 5000, 0));
+    }
+  };
+
+  const forwardVideo = async () => {
+    if (videoRef.current) {
+      const status = await videoRef.current.getStatusAsync();
+      await videoRef.current.setPositionAsync(status.positionMillis + 5000);
+    }
   };
 
   return (
     <View style={styles.container}>
-      <Camera 
-        device = {device}
-        isActive={true}
-        style={styles.camera} 
-        ref={camera}
-        {...props}
-        video = {true}       
-      >
-        <TouchableOpacity style={styles.flipButton} onPress={toggleCameraFacing}>
-          <Image source={require('../assets/flip_cam.png')} style={styles.flipImage} />
-        </TouchableOpacity>
-        <View style={styles.recordButtonContainer}>
-          <TouchableOpacity style={styles.recordButton} onPress={isRecording ? stopRecording : recordVideo}>
-            {isRecording ? (
-              <View style={styles.recordSquare} />
-            ) : (
-              <View style={styles.recordCircle} />
-            )}
-          </TouchableOpacity>
+      {!videoUri && (
+        <View style={styles.uploadContainer}>
+          <Text style={styles.instructions}>Upload a video to get started</Text>
+          <Button title="Upload Video" onPress={pickVideo} />
         </View>
-      </Camera>
+      )}
       {videoUri && (
-        <Video
-          source={{ uri: videoUri }}
-          style={styles.video}
-          useNativeControls
-          resizeMode="contain"
-          isLooping={false}
-        />
+        <View style={styles.videoContainer}>
+          <View style={styles.topBar} />
+          <Video
+            ref={videoRef}
+            source={{ uri: videoUri }}
+            style={styles.video}
+            resizeMode="contain"
+            isLooping={false}
+          />
+          <View style={styles.bottomBar}>
+            <TouchableOpacity onPress={rewindVideo}>
+              <Ionicons name="play-back" size={24} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={playVideo}>
+              <Ionicons name="play" size={24} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={pauseVideo}>
+              <Ionicons name="pause" size={24} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={forwardVideo}>
+              <Ionicons name="play-forward" size={24} color="white" />
+            </TouchableOpacity>
+          </View>
+        </View>
       )}
     </View>
   );
@@ -86,48 +103,37 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-  },
-  camera: {
-    flex: 1,
-  },
-  flipButton: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-  },
-  flipImage: {
-    width: 40,
-    height: 40,
-  },
-  recordButtonContainer: {
-    position: 'absolute',
-    bottom: '10%',
-    left: '50%',
-    transform: [{ translateX: -35 }], // Center horizontally
-  },
-  recordButton: {
     alignItems: 'center',
+  },
+  uploadContainer: {
     justifyContent: 'center',
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    borderWidth: 2,
-    borderColor: 'white',
+    alignItems: 'center',
   },
-  recordCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'red',
+  instructions: {
+    fontSize: 18,
+    marginBottom: 10,
   },
-  recordSquare: {
-    width: 30,
-    height: 30,
-    backgroundColor: 'red',
+  videoContainer: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   video: {
-    alignSelf: 'center',
-    width: 350,
-    height: 220,
+    flex: 1,
+    width: '100%',
+  },
+  topBar: {
+    height: 50,
+    width: '100%',
+    backgroundColor: 'black',
+  },
+  bottomBar: {
+    height: 50,
+    width: '100%',
+    backgroundColor: 'black',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
   },
 });
