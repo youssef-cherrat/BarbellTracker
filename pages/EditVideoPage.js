@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, Text, Dimensions, Modal, Switch, TextInput, Button} from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Text, Dimensions, Modal, Switch, TextInput, Button } from 'react-native';
 import { Video } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -112,7 +112,12 @@ export default function EditVideoPage({ route }) {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Settings</Text>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Settings</Text>
+              <TouchableOpacity onPress={() => setShowSettings(false)} style={styles.doneButton}>
+                <Text style={styles.doneButtonText}>Done</Text>
+              </TouchableOpacity>
+            </View>
             <View style={styles.settingRow}>
               <Text style={styles.settingText}>Show Date</Text>
               <Switch value={showDate} onValueChange={setShowDate} />
@@ -163,7 +168,6 @@ export default function EditVideoPage({ route }) {
                 />
               </View>
             )}
-            <Button title="Close" onPress={() => setShowSettings(false)} />
           </View>
         </View>
       </Modal>
@@ -243,10 +247,22 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 20,
   },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
+  },
+  doneButton: {
+    padding: 10,
+  },
+  doneButtonText: {
+    color: 'blue',
+    fontSize: 16,
   },
   settingRow: {
     flexDirection: 'row',
