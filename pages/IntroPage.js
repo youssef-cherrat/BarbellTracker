@@ -4,10 +4,10 @@ import { View, Text, Button, StyleSheet } from 'react-native';
 export default function IntroPage({ navigation }) {
   return (
     <View style={styles.container}>
-      <Text>Welcome to the Camera App</Text>
+      <Text>Welcome to the Barbell Tracker App</Text>
       <Button
-        title="Go to Camera"
-        onPress={() => navigation.navigate('Camera')}
+        title="Go to Upload Page"
+        onPress={() => navigation.navigate('Upload')}
       />
     </View>
   );
