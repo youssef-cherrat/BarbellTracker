@@ -1,27 +1,38 @@
-import React, { useRef, useEffect } from 'react';
-import { StyleSheet, View, TouchableOpacity, Text } from 'react-native';
+import React, { useRef, useEffect, useState } from 'react';
+import { StyleSheet, View, TouchableOpacity, Text, Dimensions, Modal, Switch, TextInput, Button} from 'react-native';
 import { Video } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+
+const { width } = Dimensions.get('window'); // Get screen width
 
 export default function EditVideoPage({ route }) {
   const { videoUri } = route.params || {}; // Ensure route.params is not undefined
   const videoRef = useRef(null);
   const navigation = useNavigation();
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showDate, setShowDate] = useState(false);
+  const [showWeight, setShowWeight] = useState(false);
+  const [weightUnit, setWeightUnit] = useState('LB');
+  const [weight, setWeight] = useState('');
+  const [showRPE, setShowRPE] = useState(false);
+  const [rpe, setRPE] = useState('');
 
   useEffect(() => {
     console.log('Received Video URI:', videoUri);
   }, [videoUri]);
 
-  const playVideo = async () => {
+  const togglePlayPause = async () => {
     if (videoRef.current) {
-      await videoRef.current.playAsync();
-    }
-  };
-
-  const pauseVideo = async () => {
-    if (videoRef.current) {
-      await videoRef.current.pauseAsync();
+      const status = await videoRef.current.getStatusAsync();
+      if (status.isPlaying) {
+        await videoRef.current.pauseAsync();
+        setIsPlaying(false);
+      } else {
+        await videoRef.current.playAsync();
+        setIsPlaying(true);
+      }
     }
   };
 
@@ -39,11 +50,26 @@ export default function EditVideoPage({ route }) {
     }
   };
 
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={24} color="white" />
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.topButton}>
+          <Ionicons name="chevron-back" size={32} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setShowSettings(true)} style={styles.topButton}>
+          <Ionicons name="settings-outline" size={32} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => console.log('Search button pressed')} style={styles.topButton}>
+          <Ionicons name="search-outline" size={32} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('Export')} style={styles.topButton}>
+          <Text style={styles.exportButtonText}>Export</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.videoContainer}>
@@ -59,21 +85,88 @@ export default function EditVideoPage({ route }) {
         ) : (
           <Text style={styles.errorText}>Video URI is missing</Text>
         )}
+        <View style={styles.watermarkContainer}>
+          {showDate && <Text style={styles.watermark}>{currentDate}</Text>}
+          {showWeight && weight !== '' && (
+            <Text style={styles.watermark}>{`${weight} ${weightUnit}`}</Text>
+          )}
+          {showRPE && rpe !== '' && <Text style={styles.watermark}>{`RPE: ${rpe}`}</Text>}
+        </View>
       </View>
-      <View style={styles.bottomBar}>
-        <TouchableOpacity onPress={rewindVideo}>
-          <Ionicons name="play-back" size={24} color="white" />
+      <View style={styles.controlBar}>
+        <TouchableOpacity onPress={rewindVideo} style={styles.controlButton}>
+          <Ionicons name="play-back" size={32} color="white" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={playVideo}>
-          <Ionicons name="play" size={24} color="white" />
+        <TouchableOpacity onPress={togglePlayPause} style={styles.controlButton}>
+          <Ionicons name={isPlaying ? 'pause' : 'play'} size={32} color="white" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={pauseVideo}>
-          <Ionicons name="pause" size={24} color="white" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={forwardVideo}>
-          <Ionicons name="play-forward" size={24} color="white" />
+        <TouchableOpacity onPress={forwardVideo} style={styles.controlButton}>
+          <Ionicons name="play-forward" size={32} color="white" />
         </TouchableOpacity>
       </View>
+      <Modal
+        visible={showSettings}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowSettings(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Settings</Text>
+            <View style={styles.settingRow}>
+              <Text style={styles.settingText}>Show Date</Text>
+              <Switch value={showDate} onValueChange={setShowDate} />
+            </View>
+            <View style={styles.settingRow}>
+              <Text style={styles.settingText}>Show Weight</Text>
+              <Switch value={showWeight} onValueChange={setShowWeight} />
+            </View>
+            {showWeight && (
+              <>
+                <View style={styles.settingRow}>
+                  <TouchableOpacity
+                    style={[styles.optionButton, weightUnit === 'LB' && styles.optionButtonSelected]}
+                    onPress={() => setWeightUnit('LB')}
+                  >
+                    <Text style={styles.optionButtonText}>LB</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.optionButton, weightUnit === 'KG' && styles.optionButtonSelected]}
+                    onPress={() => setWeightUnit('KG')}
+                  >
+                    <Text style={styles.optionButtonText}>KG</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.settingRow}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter weight"
+                    keyboardType="numeric"
+                    value={weight}
+                    onChangeText={setWeight}
+                  />
+                </View>
+              </>
+            )}
+            <View style={styles.settingRow}>
+              <Text style={styles.settingText}>Show RPE</Text>
+              <Switch value={showRPE} onValueChange={setShowRPE} />
+            </View>
+            {showRPE && (
+              <View style={styles.settingRow}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter RPE"
+                  keyboardType="numeric"
+                  value={rpe}
+                  onChangeText={setRPE}
+                />
+              </View>
+            )}
+            <Button title="Close" onPress={() => setShowSettings(false)} />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -84,24 +177,46 @@ const styles = StyleSheet.create({
     backgroundColor: 'black',
   },
   topBar: {
-    height: 50,
+    height: 200,
     width: '100%',
     backgroundColor: 'black',
-    justifyContent: 'center',
-    paddingLeft: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 5,
+  },
+  topButton: {
+    padding: 10,
+  },
+  exportButtonText: {
+    color: 'lightblue',
+    fontSize: 20,
+    marginLeft: 10,
   },
   videoContainer: {
-    flex: 1,
     width: '100%',
+    height: 450, // Set a specific height for the video container
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'black',
+    marginBottom: 10,
   },
   video: {
-    width: '100%',
+    width: width, // Take up the entire width of the screen
     height: '100%',
   },
-  bottomBar: {
+  watermarkContainer: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+  },
+  watermark: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  controlBar: {
     height: 50,
     width: '100%',
     backgroundColor: 'black',
@@ -109,8 +224,58 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     alignItems: 'center',
   },
+  controlButton: {
+    padding: 10,
+  },
   errorText: {
     color: 'red',
     fontSize: 18,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  settingText: {
+    fontSize: 16,
+  },
+  optionButton: {
+    padding: 10,
+    borderWidth: 1,
+    borderColor: 'black',
+    borderRadius: 5,
+    marginHorizontal: 5,
+  },
+  optionButtonSelected: {
+    backgroundColor: 'black',
+    color: 'white',
+  },
+  optionButtonText: {
+    color: 'black',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: 'black',
+    borderRadius: 5,
+    padding: 5,
+    width: '100%',
   },
 });
