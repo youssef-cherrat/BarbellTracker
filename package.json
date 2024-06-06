@@ -17,6 +17,7 @@
     "expo": "~51.0.9",
     "expo-av": "^14.0.5",
     "expo-camera": "~15.0.10",
+    "expo-document-picker": "^12.0.1",
     "expo-media-library": "^16.0.3",
     "expo-sharing": "^12.0.1",
     "expo-status-bar": "~1.12.1",
