@@ -1,10 +1,10 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 import { StyleSheet, View, TouchableOpacity, Text, Dimensions, Modal, Switch, TextInput } from 'react-native';
 import { Video } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-const { width } = Dimensions.get('window');
+
+const { width } = Dimensions.get('window'); // Get screen width
 
 export default function EditVideoPage({ route }) {
   const { videoUri } = route.params || {}; // Ensure route.params is not undefined
@@ -36,7 +36,6 @@ export default function EditVideoPage({ route }) {
     }
   };
 
-  // Functions to rewind and forward the video
   const rewindVideo = async () => {
     if (videoRef.current) {
       const status = await videoRef.current.getStatusAsync();
@@ -58,120 +57,123 @@ export default function EditVideoPage({ route }) {
   });
 
   return (
-      <View style={styles.container}>
-        <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.topButton}>
-            <Ionicons name="chevron-back" size={32} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowSettings(true)} style={styles.topButton}>
-            <Ionicons name="settings-outline" size={32} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity
-              onPress={() => navigation.navigate('Export', { videoUri, showDate, showWeight, weight, weightUnit, showRPE, rpe })}
-              style={styles.topButton}>
-            <Text style={styles.exportButtonText}>Export</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.videoContainer}>
-          {videoUri ? (
-              <Video
-                  ref={videoRef}
-                  source={{ uri: videoUri }}
-                  style={styles.video}
-                  resizeMode="contain"
-                  isLooping={false}
-                  onError={(error) => console.log('Video Error:', error)}
-              />
-          ) : (
-              <Text style={styles.errorText}>Video URI is missing</Text>
-          )}
-          <View style={styles.watermarkContainer}>
-            {showDate && <Text style={styles.watermark}>{currentDate}</Text>}
-            {showWeight && weight !== '' && (
-                <Text style={styles.watermark}>{`${weight} ${weightUnit}`}</Text>
-            )}
-            {showRPE && rpe !== '' && <Text style={styles.watermark}>{`RPE: ${rpe}`}</Text>}
-          </View>
-        </View>
-        <View style={styles.controlBar}>
-          <TouchableOpacity onPress={rewindVideo} style={styles.controlButton}>
-            <Ionicons name="play-back" size={32} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={togglePlayPause} style={styles.controlButton}>
-            <Ionicons name={isPlaying ? 'pause' : 'play'} size={32} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={forwardVideo} style={styles.controlButton}>
-            <Ionicons name="play-forward" size={32} color="white" />
-          </TouchableOpacity>
-        </View>
-        <Modal
-            visible={showSettings}
-            animationType="slide"
-            transparent={true}
-            onRequestClose={() => setShowSettings(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Settings</Text>
-                <TouchableOpacity onPress={() => setShowSettings(false)} style={styles.doneButton}>
-                  <Text style={styles.doneButtonText}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.settingRow}>
-                <Text style={styles.settingText}>Show Date</Text>
-                <Switch value={showDate} onValueChange={setShowDate} />
-              </View>
-              <View style={styles.settingRow}>
-                <Text style={styles.settingText}>Show Weight</Text>
-                <Switch value={showWeight} onValueChange={setShowWeight} />
-              </View>
-              {showWeight && (
-                  <>
-                    <View style={styles.settingRow}>
-                      <TouchableOpacity
-                          style={[styles.optionButton, weightUnit === 'LB' && styles.optionButtonSelected]}
-                          onPress={() => setWeightUnit('LB')}
-                      >
-                        <Text style={styles.optionButtonText}>LB</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                          style={[styles.optionButton, weightUnit === 'KG' && styles.optionButtonSelected]}
-                          onPress={() => setWeightUnit('KG')}
-                      >
-                        <Text style={styles.optionButtonText}>KG</Text>
-                      </TouchableOpacity>
-                    </View>
-                    <View style={styles.settingRow}>
-                      <TextInput
-                          style={styles.input}
-                          placeholder="Enter weight"
-                          keyboardType="numeric"
-                          value={weight}
-                          onChangeText={setWeight}
-                      />
-                    </View>
-                  </>
-              )}
-              <View style={styles.settingRow}>
-                <Text style={styles.settingText}>Show RPE</Text>
-                <Switch value={showRPE} onValueChange={setShowRPE} />
-              </View>
-              {showRPE && (
-                  <View style={styles.settingRow}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Enter RPE"
-                        keyboardType="numeric"
-                        value={rpe}
-                        onChangeText={setRPE}
-                    />
-                  </View>
-              )}
-            </View>
-          </View>
-        </Modal>
+    <View style={styles.container}>
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.topButton}>
+          <Ionicons name="chevron-back" size={32} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setShowSettings(true)} style={styles.topButton}>
+          <Ionicons name="settings-outline" size={32} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => console.log('Search button pressed')} style={styles.topButton}>
+          <Ionicons name="search-outline" size={32} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Export', { videoUri, showDate, showWeight, weight, weightUnit, showRPE, rpe })}
+          style={styles.topButton}>
+          <Text style={styles.exportButtonText}>Export</Text>
+        </TouchableOpacity>
       </View>
+      <View style={styles.videoContainer}>
+        {videoUri ? (
+          <Video
+            ref={videoRef}
+            source={{ uri: videoUri }}
+            style={styles.video}
+            resizeMode="contain"
+            isLooping={false}
+            onError={(error) => console.log('Video Error:', error)}
+          />
+        ) : (
+          <Text style={styles.errorText}>Video URI is missing</Text>
+        )}
+        <View style={styles.watermarkContainer}>
+          {showDate && <Text style={styles.watermark}>{currentDate}</Text>}
+          {showWeight && weight !== '' && (
+            <Text style={styles.watermark}>{`${weight} ${weightUnit}`}</Text>
+          )}
+          {showRPE && rpe !== '' && <Text style={styles.watermark}>{`RPE: ${rpe}`}</Text>}
+        </View>
+      </View>
+      <View style={styles.controlBar}>
+        <TouchableOpacity onPress={rewindVideo} style={styles.controlButton}>
+          <Ionicons name="play-back" size={32} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={togglePlayPause} style={styles.controlButton}>
+          <Ionicons name={isPlaying ? 'pause' : 'play'} size={32} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={forwardVideo} style={styles.controlButton}>
+          <Ionicons name="play-forward" size={32} color="white" />
+        </TouchableOpacity>
+      </View>
+      <Modal
+        visible={showSettings}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowSettings(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Settings</Text>
+              <TouchableOpacity onPress={() => setShowSettings(false)} style={styles.doneButton}>
+                <Text style={styles.doneButtonText}>Done</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.settingRow}>
+              <Text style={styles.settingText}>Show Date</Text>
+              <Switch value={showDate} onValueChange={setShowDate} />
+            </View>
+            <View style={styles.settingRow}>
+              <Text style={styles.settingText}>Show Weight</Text>
+              <Switch value={showWeight} onValueChange={setShowWeight} />
+            </View>
+            {showWeight && (
+              <>
+                <View style={styles.settingRow}>
+                  <TouchableOpacity
+                    style={[styles.optionButton, weightUnit === 'LB' && styles.optionButtonSelected]}
+                    onPress={() => setWeightUnit('LB')}
+                  >
+                    <Text style={styles.optionButtonText}>LB</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.optionButton, weightUnit === 'KG' && styles.optionButtonSelected]}
+                    onPress={() => setWeightUnit('KG')}
+                  >
+                    <Text style={styles.optionButtonText}>KG</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.settingRow}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter weight"
+                    keyboardType="numeric"
+                    value={weight}
+                    onChangeText={setWeight}
+                  />
+                </View>
+              </>
+            )}
+            <View style={styles.settingRow}>
+              <Text style={styles.settingText}>Show RPE</Text>
+              <Switch value={showRPE} onValueChange={setShowRPE} />
+            </View>
+            {showRPE && (
+              <View style={styles.settingRow}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter RPE"
+                  keyboardType="numeric"
+                  value={rpe}
+                  onChangeText={setRPE}
+                />
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
