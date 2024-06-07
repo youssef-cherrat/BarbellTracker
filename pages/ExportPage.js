@@ -1,57 +1,56 @@
-import React from 'react';
-import { View, StyleSheet, Text, Dimensions } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, Button, StyleSheet, Alert } from 'react-native';
+import * as MediaLibrary from 'expo-media-library';
 import { Video } from 'expo-av';
 
-const { width } = Dimensions.get('window');
+export default function ExportPage({ route, navigation }) {
+  const { videoUri, stats } = route.params;
 
-export default function ExportPage({ route }) {
-  const { videoUri, showDate, showWeight, weight, weightUnit, showRPE, rpe } = route.params;
+  useEffect(() => {
+    (async () => {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission required', 'Please grant camera roll permissions in your settings.');
+      }
+    })();
+  }, []);
 
-  const currentDate = new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const saveToCameraRoll = async () => {
+    try {
+      await MediaLibrary.saveToLibraryAsync(videoUri);
+      Alert.alert('Success', 'Video saved to camera roll!');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save video to camera roll.');
+    }
+  };
 
   return (
-    <View style={styles.container}>
-      <Video
-        source={{ uri: videoUri }}
-        style={styles.video}
-        useNativeControls
-        resizeMode="contain"
-        isLooping={false}
-      />
-      <View style={styles.watermarkContainer}>
-        {showDate && <Text style={styles.watermark}>{currentDate}</Text>}
-        {showWeight && weight !== '' && (
-          <Text style={styles.watermark}>{`${weight} ${weightUnit}`}</Text>
-        )}
-        {showRPE && rpe !== '' && <Text style={styles.watermark}>{`RPE: ${rpe}`}</Text>}
+      <View style={styles.container}>
+        <Video
+            source={{ uri: videoUri }}
+            style={styles.video}
+            useNativeControls
+            resizeMode="contain"
+            isLooping
+        />
+        <Text>{stats}</Text>
+        <Button title="Save to Camera Roll" onPress={saveToCameraRoll} />
+        <Button
+            title="Back to Intro"
+            onPress={() => navigation.navigate('Intro')}
+        />
       </View>
-    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black',
     justifyContent: 'center',
     alignItems: 'center',
   },
   video: {
     width: '100%',
-    height: '100%',
-  },
-  watermarkContainer: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-  },
-  watermark: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+    height: '50%',
   },
 });
