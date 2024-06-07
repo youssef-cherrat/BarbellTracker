@@ -1,10 +1,13 @@
-import React, { useEffect } from 'react';
-import { View, Text, Button, StyleSheet, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Button, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import * as MediaLibrary from 'expo-media-library';
 import { Video } from 'expo-av';
+import { RNFFmpeg } from 'react-native-ffmpeg';
 
 export default function ExportPage({ route, navigation }) {
     const { videoUri, showDate, showWeight, weight, weightUnit, showRPE, rpe } = route.params;
+    const [processing, setProcessing] = useState(false);
+    const [processedVideoUri, setProcessedVideoUri] = useState(null);
 
     useEffect(() => {
         (async () => {
@@ -13,39 +16,79 @@ export default function ExportPage({ route, navigation }) {
                 Alert.alert('Permission required', 'Please grant camera roll permissions in your settings.');
             }
         })();
-    }, []);
+
+        if (videoUri) {
+            processVideo();
+        }
+    }, [videoUri]);
+
+    const processVideo = async () => {
+        setProcessing(true);
+
+        const currentDate = new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        });
+
+        let filters = '';
+
+        if (showDate) {
+            filters += `drawtext=text='${currentDate}':x=10:y=10:fontsize=24:fontcolor=white,`;
+        }
+        if (showWeight && weight !== '') {
+            filters += `drawtext=text='${weight} ${weightUnit}':x=10:y=40:fontsize=24:fontcolor=white,`;
+        }
+        if (showRPE && rpe !== '') {
+            filters += `drawtext=text='RPE: ${rpe}':x=10:y=70:fontsize=24:fontcolor=white,`;
+        }
+
+        if (filters.endsWith(',')) {
+            filters = filters.slice(0, -1); // Remove the trailing comma
+        }
+
+        const outputUri = `${RNFFmpeg.getFFmpegDir()}/output.mp4`;
+
+        const command = `-i ${videoUri} -vf "${filters}" -codec:a copy ${outputUri}`;
+
+        const result = await RNFFmpeg.execute(command);
+
+        if (result.returnCode === 0) {
+            setProcessedVideoUri(outputUri);
+        } else {
+            Alert.alert('Error', 'Failed to process the video.');
+        }
+
+        setProcessing(false);
+    };
 
     const saveToCameraRoll = async () => {
         try {
-            await MediaLibrary.saveToLibraryAsync(videoUri);
+            await MediaLibrary.saveToLibraryAsync(processedVideoUri || videoUri);
             Alert.alert('Success', 'Video saved to camera roll!');
         } catch (error) {
             Alert.alert('Error', 'Failed to save video to camera roll.');
         }
     };
 
-    const currentDate = new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
+    if (processing) {
+        return (
+            <View style={styles.container}>
+                <ActivityIndicator size="large" color="#0000ff" />
+                <Text>Processing video...</Text>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
             <Video
-                source={{ uri: videoUri }}
+                source={{ uri: processedVideoUri || videoUri }}
                 style={styles.video}
                 useNativeControls
                 resizeMode="contain"
                 isLooping
             />
-            <View style={styles.watermarkContainer}>
-                {showDate && <Text style={styles.watermark}>{currentDate}</Text>}
-                {showWeight && weight !== '' && (
-                    <Text style={styles.watermark}>{`${weight} ${weightUnit}`}</Text>
-                )}
-                {showRPE && rpe !== '' && <Text style={styles.watermark}>{`RPE: ${rpe}`}</Text>}
-            </View>
             <Button title="Save to Camera Roll" onPress={saveToCameraRoll} />
             <Button
                 title="Back to Intro"
@@ -64,15 +107,5 @@ const styles = StyleSheet.create({
     video: {
         width: '100%',
         height: '50%',
-    },
-    watermarkContainer: {
-        position: 'absolute',
-        top: 10,
-        left: 10,
-    },
-    watermark: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
     },
 });
