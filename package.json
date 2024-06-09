@@ -26,6 +26,7 @@
     "react-dom": "18.2.0",
     "react-native": "0.74.1",
     "react-native-cameraroll": "^1.0.0-alpha2",
+    "react-native-canvas": "^0.1.40",
     "react-native-ffmpeg": "^0.5.2",
     "react-native-vision-camera": "^4.0.5",
     "react-native-web": "~0.19.10"
