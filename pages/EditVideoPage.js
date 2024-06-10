@@ -13,6 +13,7 @@ export default function EditVideoPage({ route }) {
   const navigation = useNavigation();
   const [isPlaying, setIsPlaying] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showSearchSettings, setShowSearchSettings] = useState(false);
   const [showDate, setShowDate] = useState(false);
   const [showWeight, setShowWeight] = useState(false);
   const [weightUnit, setWeightUnit] = useState('LB');
@@ -22,6 +23,9 @@ export default function EditVideoPage({ route }) {
   const [circleVisible, setCircleVisible] = useState(false);
   const [circlePosition, setCirclePosition] = useState({ x: width / 2, y: height / 4 });
   const [motionPath, setMotionPath] = useState([]);
+  const [frameInterval, setFrameInterval] = useState(5);
+  const [pathColor, setPathColor] = useState('red');
+  const [currentFrame, setCurrentFrame] = useState(0);
 
   useEffect(() => {
     console.log('Received Video URI:', videoUri);
@@ -40,37 +44,42 @@ export default function EditVideoPage({ route }) {
     }
   };
 
-  const rewindVideo = async () => {
-    if (videoRef.current) {
-      const status = await videoRef.current.getStatusAsync();
-      await videoRef.current.setPositionAsync(Math.max(status.positionMillis - 5000, 0));
+  const undoLastDot = () => {
+    if (motionPath.length > 0) {
+      const newMotionPath = [...motionPath];
+      const lastDot = newMotionPath.pop();
+      setUndoStack((prevStack) => [...prevStack, lastDot]);
+      setMotionPath(newMotionPath);
+    }
+  };
+  
+  const redoLastUndo = () => {
+    if (undoStack.length > 0) {
+      const newUndoStack = [...undoStack];
+      const lastUndo = newUndoStack.pop();
+      setRedoStack((prevStack) => [...prevStack, lastUndo]);
+      setMotionPath((prevPath) => [...prevPath, lastUndo]);
     }
   };
 
-  const forwardVideo = async () => {
-    if (videoRef.current) {
-      const status = await videoRef.current.getStatusAsync();
-      await videoRef.current.setPositionAsync(status.positionMillis + 5000);
-    }
+  const handleVideoPress = async (evt) => {
+    const newX = evt.nativeEvent.locationX;
+    const newY = evt.nativeEvent.locationY;
+    setCirclePosition({ x: newX, y: newY });
+    setMotionPath((prevPath) => [...prevPath, { x: newX, y: newY }]);
+  
+    const status = await videoRef.current.getStatusAsync();
+    const newPosition = status.positionMillis + frameInterval * 1000 / 24;
+    await videoRef.current.setPositionAsync(newPosition);
+    setCurrentFrame(currentFrame + frameInterval);
   };
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderMove: (evt, gestureState) => {
-        const newX = Math.max(0, Math.min(width, gestureState.moveX));
-        const newY = Math.max(0, Math.min(height, gestureState.moveY));
-        setCirclePosition({ x: newX, y: newY });
-        setMotionPath((prevPath) => [...prevPath, { x: newX, y: newY }]);
-      },
-    })
-  ).current;
+  
 
   const drawPath = (canvas) => {
     if (canvas) {
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.strokeStyle = 'red';
+      ctx.strokeStyle = pathColor;
       ctx.lineWidth = 2;
       ctx.beginPath();
       motionPath.forEach((point, index) => {
@@ -82,7 +91,7 @@ export default function EditVideoPage({ route }) {
       });
       ctx.stroke();
     }
-  };
+  };  
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
@@ -100,8 +109,8 @@ export default function EditVideoPage({ route }) {
           <TouchableOpacity onPress={() => setShowSettings(true)} style={styles.topButton}>
             <Ionicons name="settings-outline" size={32} color="white" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setCircleVisible(true)} style={styles.topButton}>
-            <Ionicons name="search-outline" size={32} color="white" />
+          <TouchableOpacity onPress={() => setShowSearchSettings(true)} style={styles.topButton}>
+            <Ionicons name="barbell" size={32} color="white" />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() =>
@@ -122,16 +131,16 @@ export default function EditVideoPage({ route }) {
           </TouchableOpacity>
         </View>
       </View>
-      <View style={styles.videoContainer}>
+      <View style={styles.videoContainer} onTouchEnd={handleVideoPress}>
         {videoUri ? (
-          <Video
-            ref={videoRef}
-            source={{ uri: videoUri }}
-            style={styles.video}
-            resizeMode="contain"
-            isLooping={false}
-            onError={(error) => console.log('Video Error:', error)}
-          />
+        <Video
+          ref={videoRef}
+          source={{ uri: videoUri }}
+          style={styles.video}
+          resizeMode="contain"
+          isLooping={false}
+          onError={(error) => console.log('Video Error:', error)}
+        />
         ) : (
           <Text style={styles.errorText}>Video URI is missing</Text>
         )}
@@ -142,69 +151,20 @@ export default function EditVideoPage({ route }) {
           )}
           {showRPE && rpe !== '' && <Text style={styles.watermark}>{`RPE: ${rpe}`}</Text>}
         </View>
-        {circleVisible && (
-          <View style={styles.magnifierContainer}>
-            <View
-              {...panResponder.panHandlers}
-              style={[
-                styles.circle,
-                { left: circlePosition.x - 15, top: circlePosition.y - 15 },
-              ]}
-            />
-            <View
-              style={[
-                styles.magnifier,
-                {
-                  left: circlePosition.x + 50,
-                  top: circlePosition.y - 50,
-                },
-              ]}
-            >
-              <View style={styles.magnifiedAreaContainer}>
-                <Video
-                  source={{ uri: videoUri }}
-                  style={[
-                    styles.magnifiedArea,
-                    {
-                      transform: [
-                        { translateX: -circlePosition.x * 2 + 50 },
-                        { translateY: -circlePosition.y * 2 + 50 },
-                      ],
-                    },
-                  ]}
-                  resizeMode="contain"
-                  isLooping
-                  shouldPlay={isPlaying}
-                  isMuted
-                />
-              </View>
-            </View>
-            {/* Line connecting small circle to magnifier */}
-            <View
-              style={[
-                styles.line,
-                {
-                  left: circlePosition.x,
-                  top: circlePosition.y,
-                  width: 50,
-                },
-              ]}
-            />
-          </View>
-        )}
         <Canvas ref={drawPath} style={styles.canvas} />
       </View>
+
       <View style={styles.controlBar}>
-        <TouchableOpacity onPress={rewindVideo} style={styles.controlButton}>
-          <Ionicons name="play-back" size={32} color="white" />
+        <TouchableOpacity onPress={undoLastDot} style={styles.controlButton}>
+          <Ionicons name="arrow-undo" size={32} color="white" />
         </TouchableOpacity>
         <TouchableOpacity onPress={togglePlayPause} style={styles.controlButton}>
           <Ionicons name={isPlaying ? 'pause' : 'play'} size={32} color="white" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={forwardVideo} style={styles.controlButton}>
-          <Ionicons name="play-forward" size={32} color="white" />
+        <TouchableOpacity onPress={redoLastUndo} style={styles.controlButton}>
+          <Ionicons name="arrow-redo" size={32} color="white" />
         </TouchableOpacity>
-      </View>
+    </View>
       <Modal
         visible={showSettings}
         animationType="slide"
@@ -269,6 +229,40 @@ export default function EditVideoPage({ route }) {
                 />
               </View>
             )}
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={showSearchSettings}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowSearchSettings(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Search Settings</Text>
+              <TouchableOpacity onPress={() => setShowSearchSettings(false)} style={styles.doneButton}>
+                <Text style={styles.doneButtonText}>Done</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.settingRow}>
+              <Text style={styles.settingText}>Frame Interval</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="numeric"
+                value={frameInterval.toString()}
+                onChangeText={(text) => setFrameInterval(Number(text))}
+              />
+            </View>
+            <View style={styles.settingRow}>
+              <Text style={styles.settingText}>Path Color</Text>
+              <TextInput
+                style={styles.input}
+                value={pathColor}
+                onChangeText={setPathColor}
+              />
+            </View>
           </View>
         </View>
       </Modal>
