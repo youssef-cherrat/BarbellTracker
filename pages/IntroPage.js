@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import { ScrollView, Image, TouchableOpacity, View, Text, StyleSheet, Button } from 'react-native';
 import AntDesign from 'react-native-vector-icons/AntDesign';
-
+import { Ionicons } from '@expo/vector-icons';
 
 export default function IntroPage({ navigation }) {
   // State to manage whether instructions are shown or not
@@ -47,11 +47,13 @@ export default function IntroPage({ navigation }) {
      {showInstructions && (
        <View style={styles.instructionsBox}>
          <Text style={styles.instructions}>How to Use:</Text>
-         <Text style={styles.instructions}>1. Click "Start Recording"</Text>
-         <Text style={styles.instructions}>2. Move the circle to the barbell area</Text>
-         <Text style={styles.instructions}>3. Choose a line color (default white)</Text>
-         <Text style={styles.instructions}>4. Click "Record!"</Text>
-         <Text style={styles.instructions}>5. Then choose an exportable format for the video with insights!</Text>
+         <Text style={styles.instructions}>1. Upload a Video from your camera roll by pressing below</Text>
+         <Text style={styles.instructions}>2. Crop your video accordingly and click Choose</Text>
+         <Text style={styles.instructions}>3. Click the Barbell Icon to specify settings for the tracker color and interval</Text>
+         <Text style={styles.instructions}>4. Click the Settings Icon to specify additional info - Date, Weight (KG/LB), RPE</Text>
+         <Text style={styles.instructions}>5. Click on the barbell end cap, the video will then move to the next interval</Text>
+         <Text style={styles.instructions}>5. Continue to do so until you reach the end, then click Export</Text>
+         <Text style={styles.instructions}>5. Now you have your final video with a line of best fit!</Text>
        </View>
      )}
      <Button
