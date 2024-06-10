@@ -7,6 +7,8 @@ node_modules/
 android/
 %ProgramData%/
 
+.idea/
+
 # Expo
 .expo/
 dist/
