@@ -1,9 +1,36 @@
-import React from 'react';
+import React, {useState} from 'react';
 import { ScrollView, Image, TouchableOpacity, View, Text, StyleSheet, Button } from 'react-native';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 
 
 export default function IntroPage({ navigation }) {
+  // State to manage whether instructions are shown or not
+  const [showInstructions, setShowInstructions] = useState(false);
+  
+  // Function to toggle the instructions visibility
+  const handleToggleInstructions = () => {
+    setShowInstructions(!showInstructions);
+  };
+
+  // Sample data for FAQ
+  const faqData = [
+    { question: "How do I start?", answer: "Just press the 'Start' button!" },
+    { question: "Where do I find settings?", answer: "Settings can be found in the top right corner." },
+    // Add more FAQ items as needed
+  ];
+
+  // State to manage which FAQ items are expanded
+  const [activeSections, setActiveSections] = useState([]);
+
+  // Function to toggle the expansion of FAQ items
+  const toggleExpand = index => {
+    if (activeSections.includes(index)) {
+      setActiveSections(activeSections.filter(id => id !== index)); // Remove index from active sections
+    } else {
+      setActiveSections([...activeSections, index]); // Add index to active sections
+    }
+  };
+
  return (
    <ScrollView style={styles.container}>
    <View style={styles.logoContainer}>

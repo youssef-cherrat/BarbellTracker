@@ -15,23 +15,23 @@
     "android": "^0.0.8",
     "eas": "^0.1.0",
     "expo": "~51.0.9",
-    "expo-av": "^14.0.5",
+    "expo-av": "~14.0.5",
     "expo-camera": "~15.0.10",
-    "expo-image-picker": "^15.0.5",
-    "expo-media-library": "^16.0.3",
-    "expo-sharing": "^12.0.1",
+    "expo-image-picker": "~15.0.5",
+    "expo-media-library": "~16.0.3",
+    "expo-sharing": "~12.0.1",
     "expo-status-bar": "~1.12.1",
     "image-picker": "^0.3.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-native": "0.74.1",
+    "react-native": "0.74.2",
     "react-native-cameraroll": "^1.0.0-alpha2",
     "react-native-canvas": "^0.1.40",
     "react-native-ffmpeg": "^0.5.2",
     "react-native-web": "~0.19.10"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0"
+    "@babel/core": "^7.24.0"
   },
   "private": true
 }
