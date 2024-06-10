@@ -3,7 +3,7 @@ import { Button, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 
-export default function UploadPage() {
+export default function DisplayPage() {
   const [videoUri, setVideoUri] = useState(null);
   const navigation = useNavigation();
 

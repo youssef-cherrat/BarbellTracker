@@ -2,7 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import IntroPage from './pages/IntroPage';
-import UploadPage from './pages/UploadPage'; // Updated import to UploadPage
+import DisplayPage from './pages/DisplayPage'; // Updated import to DisplayPage
 import ExportPage from './pages/ExportPage';
 import EditVideoPage from './pages/EditVideoPage';
 
@@ -15,7 +15,7 @@ export default function App() {
         <Stack.Screen name="Intro" component={IntroPage} />
         <Stack.Screen 
           name="Upload" 
-          component={UploadPage} 
+          component={DisplayPage} 
         />
         <Stack.Screen 
           name="EditVideo" 
