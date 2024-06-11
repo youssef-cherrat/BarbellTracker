@@ -31,5 +31,4 @@ Make sure you have the following installed:
 
 - React Native
 - Expo
-- Firebase
 - Node.js
