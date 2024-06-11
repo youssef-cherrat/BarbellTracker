@@ -114,7 +114,7 @@ export default function EditVideoPage({ route }) {
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() =>
-              navigation.navigate('Export', {
+              navigation.navigate('Video', {
                 videoUri,
                 showDate,
                 showWeight,
@@ -127,7 +127,7 @@ export default function EditVideoPage({ route }) {
             }
             style={styles.topButton}
           >
-            <Text style={styles.exportButtonText}>Export</Text>
+            <Text style={styles.exportButtonText}>Video</Text>
           </TouchableOpacity>
         </View>
       </View>
