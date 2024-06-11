@@ -10,6 +10,7 @@ const { width, height } = Dimensions.get('window'); // Get screen dimensions
 export default function EditVideoPage({ route }) {
   const { videoUri } = route.params || {};
   const videoRef = useRef(null);
+  const canvasRef = useRef(null);
   const navigation = useNavigation();
   const [isPlaying, setIsPlaying] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -44,6 +45,23 @@ export default function EditVideoPage({ route }) {
     }
   };
 
+  const rewind = async () => {
+    if (videoRef.current) {
+      const status = await videoRef.current.getStatusAsync();
+      const video = await videoRef.current.setPositionAsync(Math.max(status.positionMillis - 1000, 0));
+      const newPosition = video.positionMillis;
+      console.log('Rewind to (ms):', newPosition);
+    }
+  };
+  const forward = async () => {
+    if (videoRef.current) {
+      const status = await videoRef.current.getStatusAsync();
+      const video = await videoRef.current.setPositionAsync(status.positionMillis + 1000);
+      const newPosition = video.positionMillis;
+      console.log('Forward to (ms):', newPosition);
+    }
+  };
+
   const undoLastDot = () => {
     if (motionPath.length > 0) {
       const newMotionPath = [...motionPath];
@@ -61,11 +79,32 @@ export default function EditVideoPage({ route }) {
     const newY = evt.nativeEvent.locationY;
     setCirclePosition({ x: newX, y: newY });
     setMotionPath((prevPath) => [...prevPath, { x: newX, y: newY }]);
-
-    const status = await videoRef.current.getStatusAsync();
-    const newPosition = status.positionMillis + (frameInterval * 1000) / 24;
-    await videoRef.current.setPositionAsync(newPosition);
-    setCurrentFrame(currentFrame + frameInterval);
+  
+    try {
+        const status = await videoRef.current.getStatusAsync();
+        console.log('Current position (ms):', status.positionMillis);
+        console.log('Current frame (before update):', currentFrame);
+  
+        const newPosition = status.positionMillis + (frameInterval * 1000) / 24;
+        console.log('New position (ms):', newPosition);
+  
+        await videoRef.current.setPositionAsync(newPosition);
+        console.log('Position set to (ms):', newPosition);
+  
+        // Add delay to ensure video updates its state
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const updatedStatus = await videoRef.current.getStatusAsync();
+        console.log('Updated position (ms):', updatedStatus.positionMillis);
+        
+        setCurrentFrame(prevFrame => {
+            const updatedFrame = prevFrame + frameInterval;
+            console.log('Updated frame:', updatedFrame);
+            return updatedFrame;
+        });
+    } catch (error) {
+        console.error('Error updating video position:', error);
+    }
   };
 
   const drawPath = (canvas) => {
@@ -95,8 +134,6 @@ export default function EditVideoPage({ route }) {
     month: 'long',
     day: 'numeric',
   });
-
-  const canvasRef = useRef(null);
 
   return (
     <View style={styles.container}>
@@ -176,6 +213,14 @@ export default function EditVideoPage({ route }) {
           <Ionicons name="arrow-redo" size={32} color="white" />
         </TouchableOpacity>
       </View>
+      <View style={styles.controlBar}>
+        <TouchableOpacity onPress={rewind} style={styles.controlButton}>
+          <Ionicons name="play-back" size={32} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={forward} style={styles.controlButton}>
+          <Ionicons name="play-forward" size={32} color="white" />
+        </TouchableOpacity>
+      </View>
       <Modal
         visible={showSettings}
         animationType="slide"
@@ -252,7 +297,7 @@ export default function EditVideoPage({ route }) {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Search Settings</Text>
+              <Text style={styles.modalTitle}>Bar Tracker Settings</Text>
               <TouchableOpacity onPress={() => setShowSearchSettings(false)} style={styles.doneButton}>
                 <Text style={styles.doneButtonText}>Done</Text>
               </TouchableOpacity>
@@ -260,7 +305,7 @@ export default function EditVideoPage({ route }) {
             <View style={styles.settingRow}>
               <Text style={styles.settingText}>Frame Interval</Text>
               <TextInput
-                style={styles.input}
+                style={styles.smallInput}
                 keyboardType="numeric"
                 value={frameInterval.toString()}
                 onChangeText={(text) => setFrameInterval(Number(text))}
@@ -268,11 +313,26 @@ export default function EditVideoPage({ route }) {
             </View>
             <View style={styles.settingRow}>
               <Text style={styles.settingText}>Path Color</Text>
-              <TextInput
-                style={styles.input}
-                value={pathColor}
-                onChangeText={setPathColor}
-              />
+              <TouchableOpacity
+                style={[
+                  styles.colorOptionButton,
+                  { backgroundColor: 'red' },
+                  pathColor === 'red' && styles.colorOptionButtonSelected
+                ]}
+                onPress={() => setPathColor('red')}
+              >
+                <Text style={styles.colorOptionButtonText}>Red</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.colorOptionButton,
+                  { backgroundColor: 'white' },
+                  pathColor === 'white' && styles.colorOptionButtonSelected
+                ]}
+                onPress={() => setPathColor('white')}
+              >
+                <Text style={styles.colorOptionButtonText}>White</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -403,6 +463,28 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     padding: 5,
     width: '100%',
+  },
+  smallInput: {
+    borderWidth: 1,
+    borderColor: 'black',
+    borderRadius: 5,
+    padding: 5,
+    width: 50, // Small width for the text input
+  },
+  colorOptionButton: {
+    padding: 10,
+    borderWidth: 1,
+    borderColor: 'black',
+    borderRadius: 5,
+    marginHorizontal: 5,
+  },
+  colorOptionButtonSelected: {
+    borderWidth: 2,
+    borderColor: 'blue',
+  },
+  colorOptionButtonText: {
+    color: 'black',
+    fontWeight: 'bold',
   },
   circle: {
     position: 'absolute',
