@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, Text, Dimensions, Modal, Switch, TextInput } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Text, Dimensions, Modal, Switch, TextInput, Image } from 'react-native';
 import { Video } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -53,6 +53,7 @@ export default function EditVideoPage({ route }) {
       console.log('Rewind to (ms):', newPosition);
     }
   };
+
   const forward = async () => {
     if (videoRef.current) {
       const status = await videoRef.current.getStatusAsync();
@@ -79,31 +80,31 @@ export default function EditVideoPage({ route }) {
     const newY = evt.nativeEvent.locationY;
     setCirclePosition({ x: newX, y: newY });
     setMotionPath((prevPath) => [...prevPath, { x: newX, y: newY }]);
-  
+
     try {
-        const status = await videoRef.current.getStatusAsync();
-        console.log('Current position (ms):', status.positionMillis);
-        console.log('Current frame (before update):', currentFrame);
-  
-        const newPosition = status.positionMillis + (frameInterval * 1000) / 24;
-        console.log('New position (ms):', newPosition);
-  
-        await videoRef.current.setPositionAsync(newPosition);
-        console.log('Position set to (ms):', newPosition);
-  
-        // Add delay to ensure video updates its state
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        const updatedStatus = await videoRef.current.getStatusAsync();
-        console.log('Updated position (ms):', updatedStatus.positionMillis);
-        
-        setCurrentFrame(prevFrame => {
-            const updatedFrame = prevFrame + frameInterval;
-            console.log('Updated frame:', updatedFrame);
-            return updatedFrame;
-        });
+      const status = await videoRef.current.getStatusAsync();
+      console.log('Current position (ms):', status.positionMillis);
+      console.log('Current frame (before update):', currentFrame);
+
+      const newPosition = status.positionMillis + (frameInterval * 1000) / 24;
+      console.log('New position (ms):', newPosition);
+
+      await videoRef.current.setPositionAsync(newPosition);
+      console.log('Position set to (ms):', newPosition);
+
+      // Add delay to ensure video updates its state
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const updatedStatus = await videoRef.current.getStatusAsync();
+      console.log('Updated position (ms):', updatedStatus.positionMillis);
+
+      setCurrentFrame((prevFrame) => {
+        const updatedFrame = prevFrame + frameInterval;
+        console.log('Updated frame:', updatedFrame);
+        return updatedFrame;
+      });
     } catch (error) {
-        console.error('Error updating video position:', error);
+      console.error('Error updating video position:', error);
     }
   };
 
@@ -216,6 +217,9 @@ export default function EditVideoPage({ route }) {
       <View style={styles.controlBar}>
         <TouchableOpacity onPress={rewind} style={styles.controlButton}>
           <Ionicons name="play-back" size={32} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => console.log('Chart Line Button Pressed')} style={styles.controlButton}>
+          <Image source={require('../assets/chart.png')} style={styles.chartIcon} />
         </TouchableOpacity>
         <TouchableOpacity onPress={forward} style={styles.controlButton}>
           <Ionicons name="play-forward" size={32} color="white" />
@@ -400,6 +404,10 @@ const styles = StyleSheet.create({
   },
   controlButton: {
     padding: 10,
+  },
+  chartIcon: {
+    width: 32,
+    height: 32,
   },
   errorText: {
     color: 'red',
