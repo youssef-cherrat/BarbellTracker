@@ -28,7 +28,6 @@
     "react-dom": "18.2.0",
     "react-native": "0.74.2",
     "react-native-canvas": "^0.1.40",
-    "react-native-picker": "^4.3.7",
     "react-native-web": "~0.19.10"
   },
   "devDependencies": {
