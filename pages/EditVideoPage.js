@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, Text, Dimensions, Modal, Switch, TextInput, PanResponder } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Text, Dimensions, Modal, Switch, TextInput } from 'react-native';
 import { Video } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -47,19 +47,13 @@ export default function EditVideoPage({ route }) {
   const undoLastDot = () => {
     if (motionPath.length > 0) {
       const newMotionPath = [...motionPath];
-      const lastDot = newMotionPath.pop();
-      setUndoStack((prevStack) => [...prevStack, lastDot]);
+      newMotionPath.pop();
       setMotionPath(newMotionPath);
     }
   };
-  
+
   const redoLastUndo = () => {
-    if (undoStack.length > 0) {
-      const newUndoStack = [...undoStack];
-      const lastUndo = newUndoStack.pop();
-      setRedoStack((prevStack) => [...prevStack, lastUndo]);
-      setMotionPath((prevPath) => [...prevPath, lastUndo]);
-    }
+    // Implement redo functionality if needed
   };
 
   const handleVideoPress = async (evt) => {
@@ -67,13 +61,12 @@ export default function EditVideoPage({ route }) {
     const newY = evt.nativeEvent.locationY;
     setCirclePosition({ x: newX, y: newY });
     setMotionPath((prevPath) => [...prevPath, { x: newX, y: newY }]);
-  
+
     const status = await videoRef.current.getStatusAsync();
-    const newPosition = status.positionMillis + frameInterval * 1000 / 24;
+    const newPosition = status.positionMillis + (frameInterval * 1000) / 24;
     await videoRef.current.setPositionAsync(newPosition);
     setCurrentFrame(currentFrame + frameInterval);
   };
-  
 
   const drawPath = (canvas) => {
     if (canvas) {
@@ -91,13 +84,19 @@ export default function EditVideoPage({ route }) {
       });
       ctx.stroke();
     }
-  };  
+  };
+
+  useEffect(() => {
+    drawPath(canvasRef.current);
+  }, [motionPath]);
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
+
+  const canvasRef = useRef(null);
 
   return (
     <View style={styles.container}>
@@ -133,14 +132,14 @@ export default function EditVideoPage({ route }) {
       </View>
       <View style={styles.videoContainer} onTouchEnd={handleVideoPress}>
         {videoUri ? (
-        <Video
-          ref={videoRef}
-          source={{ uri: videoUri }}
-          style={styles.video}
-          resizeMode="contain"
-          isLooping={false}
-          onError={(error) => console.log('Video Error:', error)}
-        />
+          <Video
+            ref={videoRef}
+            source={{ uri: videoUri }}
+            style={styles.video}
+            resizeMode="contain"
+            isLooping={false}
+            onError={(error) => console.log('Video Error:', error)}
+          />
         ) : (
           <Text style={styles.errorText}>Video URI is missing</Text>
         )}
@@ -151,7 +150,19 @@ export default function EditVideoPage({ route }) {
           )}
           {showRPE && rpe !== '' && <Text style={styles.watermark}>{`RPE: ${rpe}`}</Text>}
         </View>
-        <Canvas ref={drawPath} style={styles.canvas} />
+        <Canvas ref={canvasRef} style={styles.canvas} />
+        {motionPath.map((point, index) => (
+          <View
+            key={index}
+            style={[
+              styles.circle,
+              {
+                left: point.x - 15, // Adjust for circle size
+                top: point.y - 15,
+              },
+            ]}
+          />
+        ))}
       </View>
 
       <View style={styles.controlBar}>
@@ -164,7 +175,7 @@ export default function EditVideoPage({ route }) {
         <TouchableOpacity onPress={redoLastUndo} style={styles.controlButton}>
           <Ionicons name="arrow-redo" size={32} color="white" />
         </TouchableOpacity>
-    </View>
+      </View>
       <Modal
         visible={showSettings}
         animationType="slide"
