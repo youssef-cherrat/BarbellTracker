@@ -551,7 +551,7 @@ const styles = StyleSheet.create({
   },
   bestFitText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: 'bold',
   },
 });
