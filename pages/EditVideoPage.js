@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Canvas from 'react-native-canvas';
 
-const { width, height } = Dimensions.get('window'); // Get screen dimensions
+const { width, height } = Dimensions.get('window');
 
 export default function EditVideoPage({ route }) {
   const { videoUri } = route.params || {};
@@ -21,12 +21,12 @@ export default function EditVideoPage({ route }) {
   const [weight, setWeight] = useState('');
   const [showRPE, setShowRPE] = useState(false);
   const [rpe, setRPE] = useState('');
-  const [circleVisible, setCircleVisible] = useState(false);
-  const [circlePosition, setCirclePosition] = useState({ x: width / 2, y: height / 4 });
   const [motionPath, setMotionPath] = useState([]);
   const [frameInterval, setFrameInterval] = useState(5);
   const [pathColor, setPathColor] = useState('red');
   const [currentFrame, setCurrentFrame] = useState(0);
+  const [showBestFit, setShowBestFit] = useState(false);
+  const [bestFitInfo, setBestFitInfo] = useState({ slope: 0, intercept: 0 });
 
   useEffect(() => {
     console.log('Received Video URI:', videoUri);
@@ -48,18 +48,14 @@ export default function EditVideoPage({ route }) {
   const rewind = async () => {
     if (videoRef.current) {
       const status = await videoRef.current.getStatusAsync();
-      const video = await videoRef.current.setPositionAsync(Math.max(status.positionMillis - 1000, 0));
-      const newPosition = video.positionMillis;
-      console.log('Rewind to (ms):', newPosition);
+      await videoRef.current.setPositionAsync(Math.max(status.positionMillis - 1000, 0));
     }
   };
 
   const forward = async () => {
     if (videoRef.current) {
       const status = await videoRef.current.getStatusAsync();
-      const video = await videoRef.current.setPositionAsync(status.positionMillis + 1000);
-      const newPosition = video.positionMillis;
-      console.log('Forward to (ms):', newPosition);
+      await videoRef.current.setPositionAsync(status.positionMillis + 1000);
     }
   };
 
@@ -71,38 +67,17 @@ export default function EditVideoPage({ route }) {
     }
   };
 
-  const redoLastUndo = () => {
-    // Implement redo functionality if needed
-  };
-
   const handleVideoPress = async (evt) => {
     const newX = evt.nativeEvent.locationX;
     const newY = evt.nativeEvent.locationY;
-    setCirclePosition({ x: newX, y: newY });
-    setMotionPath((prevPath) => [...prevPath, { x: newX, y: newY }]);
+    setMotionPath((prevPath) => [...prevPath, { x: newX, y: newY, id: prevPath.length + 1 }]);
 
     try {
       const status = await videoRef.current.getStatusAsync();
-      console.log('Current position (ms):', status.positionMillis);
-      console.log('Current frame (before update):', currentFrame);
-
       const newPosition = status.positionMillis + (frameInterval * 1000) / 24;
-      console.log('New position (ms):', newPosition);
-
       await videoRef.current.setPositionAsync(newPosition);
-      console.log('Position set to (ms):', newPosition);
-
-      // Add delay to ensure video updates its state
       await new Promise((resolve) => setTimeout(resolve, 100));
-
-      const updatedStatus = await videoRef.current.getStatusAsync();
-      console.log('Updated position (ms):', updatedStatus.positionMillis);
-
-      setCurrentFrame((prevFrame) => {
-        const updatedFrame = prevFrame + frameInterval;
-        console.log('Updated frame:', updatedFrame);
-        return updatedFrame;
-      });
+      setCurrentFrame((prevFrame) => prevFrame + frameInterval);
     } catch (error) {
       console.error('Error updating video position:', error);
     }
@@ -113,22 +88,64 @@ export default function EditVideoPage({ route }) {
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.strokeStyle = pathColor;
+      ctx.fillStyle = pathColor;
+      ctx.font = '14px Arial';
       ctx.lineWidth = 2;
       ctx.beginPath();
       motionPath.forEach((point, index) => {
         if (index === 0) {
           ctx.moveTo(point.x, point.y);
         } else {
+          ctx.lineTo(motionPath[index - 1].x, motionPath[index - 1].y);
           ctx.lineTo(point.x, point.y);
         }
+        ctx.fillText(point.id.toString(), point.x + 5, point.y + 5);
       });
       ctx.stroke();
+      if (showBestFit) {
+        drawLineOfBestFit(ctx, motionPath);
+      }
     }
+  };
+
+  const drawLineOfBestFit = (ctx, points) => {
+    if (points.length < 2) return;
+    const { slope, intercept } = calculateLineOfBestFit(points);
+    const startX = 0;
+    const endX = width;
+    const startY = slope * startX + intercept;
+    const endY = slope * endX + intercept;
+
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(endX, endY);
+    ctx.strokeStyle = 'blue';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    setBestFitInfo({ slope, intercept });
+  };
+
+  const calculateLineOfBestFit = (points) => {
+    const n = points.length;
+    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+
+    points.forEach(point => {
+      sumX += point.x;
+      sumY += point.y;
+      sumXY += point.x * point.y;
+      sumXX += point.x * point.x;
+    });
+
+    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+
+    return { slope, intercept };
   };
 
   useEffect(() => {
     drawPath(canvasRef.current);
-  }, [motionPath]);
+  }, [motionPath, showBestFit]);
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
@@ -137,211 +154,220 @@ export default function EditVideoPage({ route }) {
   });
 
   return (
-    <View style={styles.container}>
-      <View style={styles.topBarContainer}>
-        <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.topButton}>
-            <Ionicons name="chevron-back" size={32} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowSettings(true)} style={styles.topButton}>
-            <Ionicons name="settings-outline" size={32} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowSearchSettings(true)} style={styles.topButton}>
-            <Ionicons name="barbell" size={32} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate('Video', {
-                videoUri,
-                showDate,
-                showWeight,
-                weight,
-                weightUnit,
-                showRPE,
-                rpe,
-                motionPath,
-              })
-            }
-            style={styles.topButton}
-          >
-            <Text style={styles.exportButtonText}>Video</Text>
-          </TouchableOpacity>
+      <View style={styles.container}>
+        <View style={styles.topBarContainer}>
+          <View style={styles.topBar}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.topButton}>
+              <Ionicons name="chevron-back" size={32} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowSettings(true)} style={styles.topButton}>
+              <Ionicons name="settings-outline" size={32} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowSearchSettings(true)} style={styles.topButton}>
+              <Ionicons name="barbell" size={32} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity
+                onPress={() =>
+                    navigation.navigate('Video', {
+                      videoUri,
+                      showDate,
+                      showWeight,
+                      weight,
+                      weightUnit,
+                      showRPE,
+                      rpe,
+                      motionPath,
+                      bestFitInfo,
+                    })
+                }
+                style={styles.topButton}
+            >
+              <Text style={styles.exportButtonText}>Video</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-      <View style={styles.videoContainer} onTouchEnd={handleVideoPress}>
-        {videoUri ? (
-          <Video
-            ref={videoRef}
-            source={{ uri: videoUri }}
-            style={styles.video}
-            resizeMode="contain"
-            isLooping={false}
-            onError={(error) => console.log('Video Error:', error)}
-          />
-        ) : (
-          <Text style={styles.errorText}>Video URI is missing</Text>
-        )}
-        <View style={styles.watermarkContainer}>
-          {showDate && <Text style={styles.watermark}>{currentDate}</Text>}
-          {showWeight && weight !== '' && (
-            <Text style={styles.watermark}>{`${weight} ${weightUnit}`}</Text>
+        <View style={styles.videoContainer} onTouchEnd={handleVideoPress}>
+          {videoUri ? (
+              <Video
+                  ref={videoRef}
+                  source={{ uri: videoUri }}
+                  style={styles.video}
+                  resizeMode="contain"
+                  isLooping={false}
+                  onError={(error) => console.log('Video Error:', error)}
+              />
+          ) : (
+              <Text style={styles.errorText}>Video URI is missing</Text>
           )}
-          {showRPE && rpe !== '' && <Text style={styles.watermark}>{`RPE: ${rpe}`}</Text>}
-        </View>
-        <Canvas ref={canvasRef} style={styles.canvas} />
-        {motionPath.map((point, index) => (
-          <View
-            key={index}
-            style={[
-              styles.circle,
-              {
-                left: point.x - 15, // Adjust for circle size
-                top: point.y - 15,
-              },
-            ]}
-          />
-        ))}
-      </View>
-
-      <View style={styles.controlBar}>
-        <TouchableOpacity onPress={undoLastDot} style={styles.controlButton}>
-          <Ionicons name="arrow-undo" size={32} color="white" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={togglePlayPause} style={styles.controlButton}>
-          <Ionicons name={isPlaying ? 'pause' : 'play'} size={32} color="white" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={redoLastUndo} style={styles.controlButton}>
-          <Ionicons name="arrow-redo" size={32} color="white" />
-        </TouchableOpacity>
-      </View>
-      <View style={styles.controlBar}>
-        <TouchableOpacity onPress={rewind} style={styles.controlButton}>
-          <Ionicons name="play-back" size={32} color="white" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => console.log('Chart Line Button Pressed')} style={styles.controlButton}>
-          <Image source={require('../assets/chart.png')} style={styles.chartIcon} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={forward} style={styles.controlButton}>
-          <Ionicons name="play-forward" size={32} color="white" />
-        </TouchableOpacity>
-      </View>
-      <Modal
-        visible={showSettings}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowSettings(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Settings</Text>
-              <TouchableOpacity onPress={() => setShowSettings(false)} style={styles.doneButton}>
-                <Text style={styles.doneButtonText}>Done</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.settingRow}>
-              <Text style={styles.settingText}>Show Date</Text>
-              <Switch value={showDate} onValueChange={setShowDate} />
-            </View>
-            <View style={styles.settingRow}>
-              <Text style={styles.settingText}>Show Weight</Text>
-              <Switch value={showWeight} onValueChange={setShowWeight} />
-            </View>
-            {showWeight && (
-              <>
-                <View style={styles.settingRow}>
-                  <TouchableOpacity
-                    style={[styles.optionButton, weightUnit === 'LB' && styles.optionButtonSelected]}
-                    onPress={() => setWeightUnit('LB')}
-                  >
-                    <Text style={styles.optionButtonText}>LB</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.optionButton, weightUnit === 'KG' && styles.optionButtonSelected]}
-                    onPress={() => setWeightUnit('KG')}
-                  >
-                    <Text style={styles.optionButtonText}>KG</Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.settingRow}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter weight"
-                    keyboardType="numeric"
-                    value={weight}
-                    onChangeText={setWeight}
-                  />
-                </View>
-              </>
+          <View style={styles.watermarkContainer}>
+            {showDate && <Text style={styles.watermark}>{currentDate}</Text>}
+            {showWeight && weight !== '' && (
+                <Text style={styles.watermark}>{`${weight} ${weightUnit}`}</Text>
             )}
-            <View style={styles.settingRow}>
-              <Text style={styles.settingText}>Show RPE</Text>
-              <Switch value={showRPE} onValueChange={setShowRPE} />
-            </View>
-            {showRPE && (
+            {showRPE && rpe !== '' && <Text style={styles.watermark}>{`RPE: ${rpe}`}</Text>}
+          </View>
+          <Canvas ref={canvasRef} style={styles.canvas} />
+          {motionPath.map((point, index) => (
+              <View
+                  key={index}
+                  style={[
+                    styles.circle,
+                    {
+                      left: point.x - 15,
+                      top: point.y - 15,
+                    },
+                  ]}
+              >
+                <Text style={styles.circleText}>{point.id}</Text>
+              </View>
+          ))}
+        </View>
+
+        <View style={styles.controlBar}>
+          <TouchableOpacity onPress={undoLastDot} style={styles.controlButton}>
+            <Ionicons name="arrow-undo" size={32} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={togglePlayPause} style={styles.controlButton}>
+            <Ionicons name={isPlaying ? 'pause' : 'play'} size={32} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={forward} style={styles.controlButton}>
+            <Ionicons name="arrow-redo" size={32} color="white" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.controlBar}>
+          <TouchableOpacity onPress={rewind} style={styles.controlButton}>
+            <Ionicons name="play-back" size={32} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowBestFit(!showBestFit)} style={styles.controlButton}>
+            <Image source={require('../assets/chart.png')} style={styles.chartIcon} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={forward} style={styles.controlButton}>
+            <Ionicons name="play-forward" size={32} color="white" />
+          </TouchableOpacity>
+        </View>
+        <Modal
+            visible={showSettings}
+            animationType="slide"
+            transparent={true}
+            onRequestClose={() => setShowSettings(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Settings</Text>
+                <TouchableOpacity onPress={() => setShowSettings(false)} style={styles.doneButton}>
+                  <Text style={styles.doneButtonText}>Done</Text>
+                </TouchableOpacity>
+              </View>
               <View style={styles.settingRow}>
+                <Text style={styles.settingText}>Show Date</Text>
+                <Switch value={showDate} onValueChange={setShowDate} />
+              </View>
+              <View style={styles.settingRow}>
+                <Text style={styles.settingText}>Show Weight</Text>
+                <Switch value={showWeight} onValueChange={setShowWeight} />
+              </View>
+              {showWeight && (
+                  <>
+                    <View style={styles.settingRow}>
+                      <TouchableOpacity
+                          style={[styles.optionButton, weightUnit === 'LB' && styles.optionButtonSelected]}
+                          onPress={() => setWeightUnit('LB')}
+                      >
+                        <Text style={styles.optionButtonText}>LB</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                          style={[styles.optionButton, weightUnit === 'KG' && styles.optionButtonSelected]}
+                          onPress={() => setWeightUnit('KG')}
+                      >
+                        <Text style={styles.optionButtonText}>KG</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View style={styles.settingRow}>
+                      <TextInput
+                          style={styles.input}
+                          placeholder="Enter weight"
+                          keyboardType="numeric"
+                          value={weight}
+                          onChangeText={setWeight}
+                      />
+                    </View>
+                  </>
+              )}
+              <View style={styles.settingRow}>
+                <Text style={styles.settingText}>Show RPE</Text>
+                <Switch value={showRPE} onValueChange={setShowRPE} />
+              </View>
+              {showRPE && (
+                  <View style={styles.settingRow}>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Enter RPE"
+                        keyboardType="numeric"
+                        value={rpe}
+                        onChangeText={setRPE}
+                    />
+                  </View>
+              )}
+            </View>
+          </View>
+        </Modal>
+        <Modal
+            visible={showSearchSettings}
+            animationType="slide"
+            transparent={true}
+            onRequestClose={() => setShowSearchSettings(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Bar Tracker Settings</Text>
+                <TouchableOpacity onPress={() => setShowSearchSettings(false)} style={styles.doneButton}>
+                  <Text style={styles.doneButtonText}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.settingRow}>
+                <Text style={styles.settingText}>Frame Interval</Text>
                 <TextInput
-                  style={styles.input}
-                  placeholder="Enter RPE"
-                  keyboardType="numeric"
-                  value={rpe}
-                  onChangeText={setRPE}
+                    style={styles.smallInput}
+                    keyboardType="numeric"
+                    value={frameInterval.toString()}
+                    onChangeText={(text) => setFrameInterval(Number(text))}
                 />
               </View>
-            )}
-          </View>
-        </View>
-      </Modal>
-      <Modal
-        visible={showSearchSettings}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowSearchSettings(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Bar Tracker Settings</Text>
-              <TouchableOpacity onPress={() => setShowSearchSettings(false)} style={styles.doneButton}>
-                <Text style={styles.doneButtonText}>Done</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.settingRow}>
-              <Text style={styles.settingText}>Frame Interval</Text>
-              <TextInput
-                style={styles.smallInput}
-                keyboardType="numeric"
-                value={frameInterval.toString()}
-                onChangeText={(text) => setFrameInterval(Number(text))}
-              />
-            </View>
-            <View style={styles.settingRow}>
-              <Text style={styles.settingText}>Path Color</Text>
-              <TouchableOpacity
-                style={[
-                  styles.colorOptionButton,
-                  { backgroundColor: 'red' },
-                  pathColor === 'red' && styles.colorOptionButtonSelected
-                ]}
-                onPress={() => setPathColor('red')}
-              >
-                <Text style={styles.colorOptionButtonText}>Red</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.colorOptionButton,
-                  { backgroundColor: 'white' },
-                  pathColor === 'white' && styles.colorOptionButtonSelected
-                ]}
-                onPress={() => setPathColor('white')}
-              >
-                <Text style={styles.colorOptionButtonText}>White</Text>
-              </TouchableOpacity>
+              <View style={styles.settingRow}>
+                <Text style={styles.settingText}>Path Color</Text>
+                <TouchableOpacity
+                    style={[
+                      styles.colorOptionButton,
+                      { backgroundColor: 'red' },
+                      pathColor === 'red' && styles.colorOptionButtonSelected
+                    ]}
+                    onPress={() => setPathColor('red')}
+                >
+                  <Text style={styles.colorOptionButtonText}>Red</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[
+                      styles.colorOptionButton,
+                      { backgroundColor: 'white' },
+                      pathColor === 'white' && styles.colorOptionButtonSelected
+                    ]}
+                    onPress={() => setPathColor('white')}
+                >
+                  <Text style={styles.colorOptionButtonText}>White</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+        {showBestFit && (
+            <View style={styles.bestFitInfo}>
+              <Text style={styles.bestFitText}>Slope: {bestFitInfo.slope.toFixed(2)}</Text>
+              <Text style={styles.bestFitText}>Intercept: {bestFitInfo.intercept.toFixed(2)}</Text>
+            </View>
+        )}
+      </View>
   );
 }
 
@@ -351,7 +377,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'black',
   },
   topBarContainer: {
-    marginTop: 100, // Shift everything down by 100 pixels
+    marginTop: 100,
   },
   topBar: {
     height: 60,
@@ -377,8 +403,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'black',
-    borderColor: 'lightgray', // Add light gray outline
-    borderWidth: 1, // Width of the outline
+    borderColor: 'lightgray',
+    borderWidth: 1,
+    position: 'relative',
   },
   video: {
     width: '100%',
@@ -477,7 +504,7 @@ const styles = StyleSheet.create({
     borderColor: 'black',
     borderRadius: 5,
     padding: 5,
-    width: 50, // Small width for the text input
+    width: 50,
   },
   colorOptionButton: {
     padding: 10,
@@ -496,37 +523,18 @@ const styles = StyleSheet.create({
   },
   circle: {
     position: 'absolute',
-    width: 30, // Smaller circle
+    width: 30,
     height: 30,
     borderRadius: 15,
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderColor: 'white',
     borderWidth: 2,
-  },
-  magnifierContainer: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-  },
-  magnifier: {
-    position: 'absolute',
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    overflow: 'hidden',
-    borderColor: 'white',
-    borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  magnifiedAreaContainer: {
-    width: '200%',
-    height: '200%',
-  },
-  magnifiedArea: {
-    position: 'absolute',
-    width: width * 2, // Increase size for zoom effect
-    height: height * 2,
+  circleText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
   canvas: {
     position: 'absolute',
@@ -535,9 +543,15 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  line: {
+  bestFitInfo: {
     position: 'absolute',
-    height: 2,
-    backgroundColor: 'white',
+    top: 10,
+    right: 10,
+    alignItems: 'flex-end',
+  },
+  bestFitText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
