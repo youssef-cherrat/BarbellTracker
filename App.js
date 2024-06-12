@@ -16,10 +16,9 @@ export default function App() {
   const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
-    // Simulate a delay to show the splash screen
     const timer = setTimeout(() => {
       setIsAppReady(true);
-    }, 3000); // 3 seconds delay
+    }, 3000);
 
     return () => clearTimeout(timer);
   }, []);
@@ -28,68 +27,77 @@ export default function App() {
     Linking.openURL('mailto:jja3em@virginia.edu');
   };
 
+  const handleEmailPressM = () => {
+    Linking.openURL('mailto:vnc9uv@virginia.edu');
+  };
+
   if (!isAppReady) {
     return <AnimatedSplashScreen />;
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="Intro">
-        <Stack.Screen 
-          name="Intro" 
-          component={IntroPage}
-          options={{
-            headerLeft: () => (
-              <TouchableOpacity onPress={() => Linking.openURL('https://github.com/youssef-cherrat/BarbellTracker')}>
-                <Ionicons name="logo-github" size={32} color="black" style={{ marginLeft: 10 }} />
-              </TouchableOpacity>
-            ),
-            headerRight: () => (
-              <TouchableOpacity onPress={() => setModalVisible(true)}>
-                <Ionicons name="information-circle" size={32} color="black" style={{ marginRight: 10 }} />
-              </TouchableOpacity>
-            ),
-            title: 'Home'
-          }} 
-        />
-        <Stack.Screen 
-          name="Upload" 
-          component={DisplayPage} 
-        />
-        <Stack.Screen 
-          name="EditVideo" 
-          component={EditVideoPage} 
-          options={{ headerShown: false }} // Hide the header
-        />
-        <Stack.Screen name="Video" component={ExportPage} />
-      </Stack.Navigator>
+      <NavigationContainer>
+        <Stack.Navigator initialRouteName="Intro">
+          <Stack.Screen
+              name="Intro"
+              component={IntroPage}
+              options={{
+                headerLeft: () => (
+                    <TouchableOpacity onPress={() => Linking.openURL('https://github.com/youssef-cherrat/BarbellTracker')}>
+                      <Ionicons name="logo-github" size={32} color="black" style={{ marginLeft: 10 }} />
+                    </TouchableOpacity>
+                ),
+                headerRight: () => (
+                    <TouchableOpacity onPress={() => setModalVisible(true)}>
+                      <Ionicons name="information-circle" size={32} color="black" style={{ marginRight: 10 }} />
+                    </TouchableOpacity>
+                ),
+                title: 'Home'
+              }}
+          />
+          <Stack.Screen
+              name="Upload"
+              component={DisplayPage}
+          />
+          <Stack.Screen
+              name="EditVideo"
+              component={EditVideoPage}
+              options={{ headerShown: false }}
+          />
+          <Stack.Screen name="Video" component={ExportPage} />
+        </Stack.Navigator>
 
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => {
-          setModalVisible(!modalVisible);
-        }}
-      >
-        <View style={styles.centeredView}>
-          <View style={styles.modalView}>
-            <Text style={styles.modalText}>Contact Us</Text>
-            <Text style={styles.contactText}>Youssef Cherrat</Text>
-            <TouchableOpacity onPress={handleEmailPressJ} style={styles.emailContainer}>
-              <Text style={styles.contactText}>Email: </Text>
-              <Text style={[styles.contactText, { color: 'blue', textDecorationLine: 'underline' }]}>jja3em@virginia.edu</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.button, styles.buttonClose]}
-              onPress={() => setModalVisible(!modalVisible)}
-            >
-              <Text style={styles.textStyle}>Close</Text>
-            </TouchableOpacity>
+        <Modal
+            animationType="slide"
+            transparent={true}
+            visible={modalVisible}
+            onRequestClose={() => {
+              setModalVisible(!modalVisible);
+            }}
+        >
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <Text style={styles.modalText}>Contact Us</Text>
+              <Text style={styles.contactText}>Youssef Cherrat</Text>
+              <TouchableOpacity onPress={handleEmailPressJ} style={styles.emailContainer}>
+                <Text style={styles.contactText}>Email: </Text>
+                <Text style={[styles.contactText, { color: 'blue', textDecorationLine: 'underline' }]}>jja3em@virginia.edu</Text>
+              </TouchableOpacity>
+              <Text style={styles.contactText}>Minahal Aisha</Text>
+              <TouchableOpacity onPress={handleEmailPressM} style={styles.emailContainer}>
+                <Text style={styles.contactText}>Email: </Text>
+                <Text style={[styles.contactText, { color: 'blue', textDecorationLine: 'underline' }]}>vnc9uv@virginia.edu</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                  style={[styles.button, styles.buttonClose]}
+                  onPress={() => setModalVisible(!modalVisible)}
+              >
+                <Text style={styles.textStyle}>Close</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </Modal>
-    </NavigationContainer>
+        </Modal>
+      </NavigationContainer>
   );
 }
 
