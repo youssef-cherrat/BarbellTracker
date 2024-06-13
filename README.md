@@ -32,3 +32,4 @@ Make sure you have the following installed:
 - React Native
 - Expo
 - Node.js
+  -a
