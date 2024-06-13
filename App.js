@@ -31,6 +31,10 @@ export default function App() {
     Linking.openURL('mailto:vnc9uv@virginia.edu');
   };
 
+  const handleEmailPressI = () => {
+    Linking.openURL('mailto:vnc9uv@virginia.edu');
+  };
+
   if (!isAppReady) {
     return <AnimatedSplashScreen />;
   }
@@ -87,6 +91,11 @@ export default function App() {
               <TouchableOpacity onPress={handleEmailPressM} style={styles.emailContainer}>
                 <Text style={styles.contactText}>Email: </Text>
                 <Text style={[styles.contactText, { color: 'blue', textDecorationLine: 'underline' }]}>vnc9uv@virginia.edu</Text>
+              </TouchableOpacity>
+              <Text style={styles.contactText}>Yoon Lee</Text>
+              <TouchableOpacity onPress={handleEmailPressI} style={styles.emailContainer}>
+                <Text style={styles.contactText}>Email: </Text>
+                <Text style={[styles.contactText, { color: 'blue', textDecorationLine: 'underline' }]}>fnb5ww@virginia.edu</Text>
               </TouchableOpacity>
               <TouchableOpacity
                   style={[styles.button, styles.buttonClose]}
