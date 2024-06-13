@@ -29,8 +29,22 @@ export default function EditVideoPage({ route }) {
   const [bestFitInfo, setBestFitInfo] = useState({ slope: 0, intercept: 0 });
 
   useEffect(() => {
-    console.log('Received Video URI:', videoUri);
-  }, [videoUri]);
+    const handleResize = () => {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        canvas.width = width;
+        canvas.height = height;
+        drawPath(canvas);  
+      }
+    };
+  
+    handleResize();  
+    Dimensions.addEventListener('change', handleResize);  
+  
+    return () => {
+      Dimensions.removeEventListener('change', handleResize);
+    };
+  }, [width, height]);
 
   const togglePlayPause = async () => {
     if (videoRef.current) {
@@ -87,19 +101,19 @@ export default function EditVideoPage({ route }) {
     if (canvas) {
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.strokeStyle = pathColor;
-      ctx.fillStyle = pathColor;
-      ctx.font = '14px Arial';
-      ctx.lineWidth = 2;
       ctx.beginPath();
+      ctx.strokeStyle = pathColor;
+      // ctx.fillStyle = pathColor;
+      // ctx.font = '14px Arial';
+      ctx.lineWidth = 2;
+      
       motionPath.forEach((point, index) => {
         if (index === 0) {
           ctx.moveTo(point.x, point.y);
         } else {
-          ctx.lineTo(motionPath[index - 1].x, motionPath[index - 1].y);
+          // ctx.lineTo(motionPath[index - 1 ].x, motionPath[index - 1].y);
           ctx.lineTo(point.x, point.y);
         }
-        ctx.fillText(point.id.toString(), point.x + 5, point.y + 5);
       });
       ctx.stroke();
       if (showBestFit) {
@@ -542,6 +556,7 @@ const styles = StyleSheet.create({
     left: 0,
     width: '100%',
     height: '100%',
+    zIndex: 10,
   },
   bestFitInfo: {
     position: 'absolute',
