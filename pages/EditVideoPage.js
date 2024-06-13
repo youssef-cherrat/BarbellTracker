@@ -42,7 +42,7 @@ export default function EditVideoPage({ route }) {
     Dimensions.addEventListener('change', handleResize);  
   
     return () => {
-      Dimensions.removeEventListener('change', handleResize);
+      //Dimensions.removeEventListener('change', handleResize);
     };
   }, [width, height]);
 
@@ -69,7 +69,7 @@ export default function EditVideoPage({ route }) {
   const forward = async () => {
     if (videoRef.current) {
       const status = await videoRef.current.getStatusAsync();
-      await videoRef.current.setPositionAsync(status.positionMillis + 1000);
+      await videoRef.current.setPositionAsync(status.positionMillis + 500);
     }
   };
 
@@ -80,6 +80,15 @@ export default function EditVideoPage({ route }) {
       setMotionPath(newMotionPath);
     }
   };
+  const setPlaybackSpeed = async (speed) => {
+    if (videoRef.current) {
+      try {
+        await videoRef.current.setRateAsync(speed, true);
+      } catch (error) {
+        console.error('Error setting playback speed:', error);
+      }
+    }
+  };
 
   const handleVideoPress = async (evt) => {
     const newX = evt.nativeEvent.locationX;
@@ -87,11 +96,7 @@ export default function EditVideoPage({ route }) {
     setMotionPath((prevPath) => [...prevPath, { x: newX, y: newY, id: prevPath.length + 1 }]);
 
     try {
-      const status = await videoRef.current.getStatusAsync();
-      const newPosition = status.positionMillis + (frameInterval * 1000) / 24;
-      await videoRef.current.setPositionAsync(newPosition);
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      setCurrentFrame((prevFrame) => prevFrame + frameInterval);
+    //
     } catch (error) {
       console.error('Error updating video position:', error);
     }
@@ -209,6 +214,7 @@ export default function EditVideoPage({ route }) {
                   resizeMode="contain"
                   isLooping={false}
                   onError={(error) => console.log('Video Error:', error)}
+                  onLoad={() => setPlaybackSpeed(0.25)}
               />
           ) : (
               <Text style={styles.errorText}>Video URI is missing</Text>
