@@ -566,12 +566,15 @@ const styles = StyleSheet.create({
   },
   bestFitInfo: {
     position: 'absolute',
-    top: 10,
-    right: 10,
-    alignItems: 'flex-end',
+    bottom: 10,
+    left: '45%',
+    transform: [{ translateX: -50 }],
+    alignItems: 'center',
+    height: 100,
   },
   bestFitText: {
     color: 'white',
+    font: 'Times New Roman',
     fontSize: 17,
     fontWeight: 'bold',
   },
