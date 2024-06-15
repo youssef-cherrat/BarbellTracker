@@ -34,13 +34,13 @@ export default function EditVideoPage({ route }) {
       if (canvas) {
         canvas.width = width;
         canvas.height = height;
-        drawPath(canvas);  
+        drawPath(canvas);
       }
     };
-  
-    handleResize();  
-    Dimensions.addEventListener('change', handleResize);  
-  
+
+    handleResize();
+    Dimensions.addEventListener('change', handleResize);
+
     return () => {
       //Dimensions.removeEventListener('change', handleResize);
     };
@@ -96,7 +96,7 @@ export default function EditVideoPage({ route }) {
     setMotionPath((prevPath) => [...prevPath, { x: newX, y: newY, id: prevPath.length + 1 }]);
 
     try {
-    //
+      //
     } catch (error) {
       console.error('Error updating video position:', error);
     }
@@ -111,7 +111,7 @@ export default function EditVideoPage({ route }) {
       // ctx.fillStyle = pathColor;
       // ctx.font = '14px Arial';
       ctx.lineWidth = 2;
-      
+
       motionPath.forEach((point, index) => {
         if (index === 0) {
           ctx.moveTo(point.x, point.y);
