@@ -52,7 +52,19 @@ export default function ExportPage({ route, navigation }) {
     };
 
     useEffect(() => {
-        drawPath(canvasRef.current);
+        const canvas = canvasRef.current;
+        if (canvas) {
+            const resizeCanvas = () => {
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+                drawPath(canvas);
+            };
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            return () => {
+                window.removeEventListener('resize', resizeCanvas);
+            };
+        }
     }, [motionPath]);
 
     return (
