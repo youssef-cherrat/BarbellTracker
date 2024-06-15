@@ -14,8 +14,8 @@ export default function IntroPage({ navigation }) {
 
     // Sample data for FAQ
     const faqData = [
-        { question: "Video Length", answer: "Any video can be chosen, but it must be cropped." },
         { question: "Where do I find settings?", answer: "Settings can be found in the top right corner." },
+        { question: "What is the maximum video length?", answer: "Any video can be chosen, but it must be cropped." },
         // Add more FAQ items as needed
     ];
 
