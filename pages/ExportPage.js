@@ -1,8 +1,10 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Button, StyleSheet, Alert } from 'react-native';
+import { View, Text, Button, StyleSheet, Alert, Dimensions } from 'react-native';
 import * as MediaLibrary from 'expo-media-library';
 import { Video } from 'expo-av';
 import Canvas from 'react-native-canvas';
+
+const { width, height } = Dimensions.get('window');
 
 export default function ExportPage({ route, navigation }) {
     const { videoUri, showDate, showWeight, weight, weightUnit, showRPE, rpe, motionPath } = route.params;
@@ -54,16 +56,9 @@ export default function ExportPage({ route, navigation }) {
     useEffect(() => {
         const canvas = canvasRef.current;
         if (canvas) {
-            const resizeCanvas = () => {
-                canvas.width = canvas.offsetWidth;
-                canvas.height = canvas.offsetHeight;
-                drawPath(canvas);
-            };
-            resizeCanvas();
-            window.addEventListener('resize', resizeCanvas);
-            return () => {
-                window.removeEventListener('resize', resizeCanvas);
-            };
+            canvas.width = width;
+            canvas.height = height / 2; // Set canvas height to match the video container
+            drawPath(canvas);
         }
     }, [motionPath]);
 
