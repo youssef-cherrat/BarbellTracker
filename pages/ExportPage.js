@@ -9,6 +9,7 @@ const { width, height } = Dimensions.get('window');
 export default function ExportPage({ route, navigation }) {
     const { videoUri, showDate, showWeight, weight, weightUnit, showRPE, rpe, motionPath } = route.params;
     const canvasRef = useRef(null);
+    const videoRef = useRef(null);
 
     useEffect(() => {
         (async () => {
@@ -66,11 +67,13 @@ export default function ExportPage({ route, navigation }) {
         <View style={styles.container}>
             <View style={styles.videoContainer}>
                 <Video
+                    ref={videoRef}
                     source={{ uri: videoUri }}
                     style={styles.video}
                     useNativeControls
                     resizeMode="contain"
                     isLooping
+                    shouldPlay // This will ensure the video starts playing immediately
                 />
                 <View style={styles.watermarkContainer}>
                     {showDate && <Text style={styles.watermark}>{currentDate}</Text>}
