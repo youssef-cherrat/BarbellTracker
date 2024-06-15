@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, Button, StyleSheet, Alert, Dimensions } from 'react-native';
-import * as MediaLibrary from 'expo-media-library';
 import { Video } from 'expo-av';
 import Canvas from 'react-native-canvas';
 
@@ -12,22 +11,13 @@ export default function ExportPage({ route, navigation }) {
     const videoRef = useRef(null);
 
     useEffect(() => {
-        (async () => {
-            const { status } = await MediaLibrary.requestPermissionsAsync();
-            if (status !== 'granted') {
-                Alert.alert('Permission required', 'Please grant camera roll permissions in your settings.');
-            }
-        })();
-    }, []);
-
-    const saveToCameraRoll = async () => {
-        try {
-            await MediaLibrary.saveToLibraryAsync(videoUri);
-            Alert.alert('Success', 'Video saved to camera roll!');
-        } catch (error) {
-            Alert.alert('Error', 'Failed to save video to camera roll.');
+        const canvas = canvasRef.current;
+        if (canvas) {
+            canvas.width = width;
+            canvas.height = height / 2; // Set canvas height to match the video container
+            drawPath(canvas);
         }
-    };
+    }, [motionPath]);
 
     const currentDate = new Date().toLocaleDateString('en-US', {
         year: 'numeric',
@@ -84,7 +74,9 @@ export default function ExportPage({ route, navigation }) {
                 </View>
                 <Canvas ref={canvasRef} style={styles.canvas} />
             </View>
-            <Button title="Save to Camera Roll" onPress={saveToCameraRoll} />
+            <Text style={styles.note}>
+                Use your device's screen recording feature to save the video with the overlay.
+            </Text>
             <Button
                 title="Back to Intro"
                 onPress={() => navigation.navigate('Intro')}
@@ -125,5 +117,11 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
         zIndex: 10,
+    },
+    note: {
+        margin: 20,
+        fontSize: 16,
+        textAlign: 'center',
+        color: 'gray',
     },
 });
